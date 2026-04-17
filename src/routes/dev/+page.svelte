@@ -1,8 +1,10 @@
 <script lang="ts">
 	import missionDoc from '../../../docs/misson.md?raw';
 	import protocolDoc from '../../../docs/protocol.txt?raw';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import SunIcon from '@lucide/svelte/icons/sun';
+	import { Collapsible } from 'bits-ui';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import {
@@ -48,6 +50,7 @@
 		kind: 'status' | 'incoming' | 'outgoing' | 'error' | 'success';
 		label: string;
 		detail: string;
+		fragments?: Fragment[];
 	};
 
 	type ParsedChallenge = {
@@ -99,9 +102,14 @@
 	const characterConstraint = $derived(parseCharacterConstraint(currentPrompt));
 	const manualLength = $derived(manualValue.length);
 
-	function logEvent(kind: SessionEvent['kind'], label: string, detail: string) {
+	function logEvent(
+		kind: SessionEvent['kind'],
+		label: string,
+		detail: string,
+		fragments?: Fragment[]
+	) {
 		sessionEvents = [
-			{ id: Date.now() + Math.random(), kind, label, detail },
+			{ id: Date.now() + Math.random(), kind, label, detail, fragments },
 			...sessionEvents
 		].slice(0, 40);
 	}
@@ -403,7 +411,7 @@
 
 				currentFragments = payload.message;
 				currentPrompt = reconstructMessage(payload.message);
-				logEvent('incoming', 'Challenge', currentPrompt);
+				logEvent('incoming', 'Challenge', currentPrompt, payload.message);
 
 				try {
 					currentAdvice = await buildAdvice(currentPrompt);
@@ -547,92 +555,56 @@
 
 		<div class="grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
 			<section class="space-y-6">
-				<div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-					<Card>
-						<CardHeader>
-							<div class="flex flex-wrap items-center gap-3">
-								<Badge variant="outline">Current Challenge</Badge>
-								<CardTitle class="text-xl">{currentAdvice.label}</CardTitle>
-							</div>
-						</CardHeader>
-						<CardContent>
-							<div class="rounded-xl border bg-muted/30 p-4 text-sm leading-6">
-								{currentPrompt || 'No reconstructed transmission yet.'}
-							</div>
+				<Card>
+					<CardHeader>
+						<Badge variant="outline" class="w-fit">Transmit Response</Badge>
+					</CardHeader>
+					<CardContent>
+						<Tabs bind:value={manualMode} class="gap-4">
+							<TabsList class="grid w-full grid-cols-2">
+								<TabsTrigger value="enter_digits">enter_digits</TabsTrigger>
+								<TabsTrigger value="speak_text">speak_text</TabsTrigger>
+							</TabsList>
+						</Tabs>
 
-							{#if currentFragments.length}
-								<div class="mt-4">
-									<p class="mb-2 text-sm font-medium">Fragments</p>
-									<div class="flex flex-wrap gap-2 text-xs">
-										{#each [...currentFragments].sort((a, b) => a.timestamp - b.timestamp) as fragment}
-											<Badge variant="secondary">{fragment.timestamp}: {fragment.word}</Badge>
-										{/each}
-									</div>
-								</div>
-							{/if}
+						<Textarea
+							bind:value={manualValue}
+							rows={8}
+							placeholder={manualMode === 'enter_digits'
+								? 'Digits to enter on the keypad'
+								: 'Text to speak to NEON'}
+							class="mt-4"
+						/>
 
-							<Separator class="my-4" />
-
-							<div class="space-y-2 text-sm text-muted-foreground">
-								{#each currentAdvice.notes as note}
-									<p>{note}</p>
-								{/each}
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<Badge variant="outline" class="w-fit">Transmit Response</Badge>
-						</CardHeader>
-						<CardContent>
-							<Tabs bind:value={manualMode} class="gap-4">
-								<TabsList class="grid w-full grid-cols-2">
-									<TabsTrigger value="enter_digits">enter_digits</TabsTrigger>
-									<TabsTrigger value="speak_text">speak_text</TabsTrigger>
-								</TabsList>
-							</Tabs>
-
-							<Textarea
-								bind:value={manualValue}
-								rows={8}
-								placeholder={manualMode === 'enter_digits'
-									? 'Digits to enter on the keypad'
-									: 'Text to speak to NEON'}
-								class="mt-4"
-							/>
-
-							<div class="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+						<div class="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+							<Badge variant="secondary">Draft ready: {currentAdvice.auto ? 'yes' : 'manual'}</Badge
+							>
+							<Badge variant="secondary">Length: {manualLength}</Badge>
+							{#if characterConstraint}
 								<Badge variant="secondary"
-									>Draft ready: {currentAdvice.auto ? 'yes' : 'manual'}</Badge
+									>Allowed: {characterConstraint.min}-{characterConstraint.max}</Badge
 								>
-								<Badge variant="secondary">Length: {manualLength}</Badge>
-								{#if characterConstraint}
-									<Badge variant="secondary"
-										>Allowed: {characterConstraint.min}-{characterConstraint.max}</Badge
-									>
-								{/if}
-								{#if manualMode === 'speak_text'}
-									<Badge variant="secondary">Absolute max: 256</Badge>
-								{/if}
-							</div>
-
-							<Button onclick={sendManualResponse} class="mt-4 w-full">Send JSON payload</Button>
-
-							{#if resumeText}
-								<Separator class="my-4" />
-								<div>
-									<p class="text-sm font-medium">Crew reference</p>
-									<ScrollArea class="mt-2 h-40 rounded-xl border bg-muted/20 p-4">
-										<p class="text-xs leading-5 whitespace-pre-wrap text-muted-foreground">
-											{resumeText}
-										</p>
-									</ScrollArea>
-								</div>
 							{/if}
-						</CardContent>
-					</Card>
-				</div>
+							{#if manualMode === 'speak_text'}
+								<Badge variant="secondary">Absolute max: 256</Badge>
+							{/if}
+						</div>
+
+						<Button onclick={sendManualResponse} class="mt-4 w-full">Send JSON payload</Button>
+
+						{#if resumeText}
+							<Separator class="my-4" />
+							<div>
+								<p class="text-sm font-medium">Crew reference</p>
+								<ScrollArea class="mt-2 h-40 rounded-xl border bg-muted/20 p-4">
+									<p class="text-xs leading-5 whitespace-pre-wrap text-muted-foreground">
+										{resumeText}
+									</p>
+								</ScrollArea>
+							</div>
+						{/if}
+					</CardContent>
+				</Card>
 
 				<Card>
 					<CardHeader>
@@ -646,15 +618,60 @@
 								<p class="text-sm text-muted-foreground">No events yet.</p>
 							{:else}
 								{#each sessionEvents as event (event.id)}
-									<div class="rounded-xl border bg-muted/20 p-4">
-										<div class="flex items-center justify-between gap-3">
-											<p class="text-sm font-medium">{event.label}</p>
-											<Badge variant="outline">{event.kind}</Badge>
+									{#if event.kind === 'incoming' && event.fragments}
+										<Collapsible.Root class="rounded-xl border bg-muted/20 p-4">
+											<div class="flex items-start justify-between gap-3">
+												<div>
+													<div class="flex items-center gap-3">
+														<p class="text-sm font-medium">{event.label}</p>
+														<Badge variant="outline">{event.kind}</Badge>
+													</div>
+													<p
+														class="mt-2 text-sm leading-6 whitespace-pre-wrap text-muted-foreground"
+													>
+														{event.detail}
+													</p>
+												</div>
+												<Collapsible.Trigger
+													class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition hover:bg-muted hover:text-foreground"
+												>
+													<ChevronDownIcon
+														class="size-4 transition-transform data-[state=open]:rotate-180"
+													/>
+													<span class="sr-only">Toggle raw fragments</span>
+												</Collapsible.Trigger>
+											</div>
+											<Collapsible.Content
+												hiddenUntilFound
+												class="mt-3 overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+											>
+												<div class="space-y-2 border-t pt-3">
+													<p
+														class="text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase"
+													>
+														Raw fragments
+													</p>
+													<div class="flex flex-wrap gap-2 text-xs">
+														{#each [...event.fragments].sort((a, b) => a.timestamp - b.timestamp) as fragment}
+															<Badge variant="secondary"
+																>{fragment.timestamp}: {fragment.word}</Badge
+															>
+														{/each}
+													</div>
+												</div>
+											</Collapsible.Content>
+										</Collapsible.Root>
+									{:else}
+										<div class="rounded-xl border bg-muted/20 p-4">
+											<div class="flex items-center justify-between gap-3">
+												<p class="text-sm font-medium">{event.label}</p>
+												<Badge variant="outline">{event.kind}</Badge>
+											</div>
+											<p class="mt-2 text-sm leading-6 whitespace-pre-wrap text-muted-foreground">
+												{event.detail}
+											</p>
 										</div>
-										<p class="mt-2 text-sm leading-6 whitespace-pre-wrap text-muted-foreground">
-											{event.detail}
-										</p>
-									</div>
+									{/if}
 								{/each}
 							{/if}
 						</div>
