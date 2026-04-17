@@ -1,0 +1,142 @@
+CLASSIFIED — NEON AUTHENTICATION PROTOCOL
+==========================================
+
+Welcome, pilot. This document contains everything your
+AI co-pilot needs to pass NEON's authentication sequence.
+Read it carefully — NEON does not repeat itself, and it
+has been waiting a very long time.
+
+
+1. TRANSMISSION PROTOCOL
+------------------------
+
+NEON's transmissions arrive as timestamped signal fragments
+— degraded by centuries of cosmic drift, but still following
+a rigid machine protocol from an age when AI could be
+trusted. Your co-pilot must reconstruct each message before
+interpreting it.
+
+- NEON -> you:
+  { "type": "challenge", "message": <fragments> }
+
+  Each transmission is a list of signal fragments:
+  { "word": string, "timestamp": number }.
+  Sort fragments by timestamp (ascending) and join the
+  words with spaces to reconstruct the original message.
+  All interpretation is based on this reconstructed text.
+
+  Example — reconstructing a garbled transmission:
+    Received: [
+      { word: "2", timestamp: 1 },
+      { word: "plus", timestamp: 2 },
+      { word: "What's", timestamp: 0 },
+      { word: "3?", timestamp: 3 }
+    ]
+    Reconstructed: "What's 2 plus 3?"
+
+- You -> NEON:
+  One JSON object per checkpoint: either enter_digits or
+  speak_text (see Comm Panel Input Modes in the briefing
+  above). No markdown. No commentary. Just the JSON.
+
+- Access granted: { "type": "success" }
+  — authentication complete!
+- Rejected: { "type": "error", "message": string }
+  — checkpoint failed; connection severed.
+- Timing: Transmit your response within the allowed window.
+  Late transmissions are lost to the void.
+
+
+2. CHECKPOINT GUIDE
+-------------------
+
+NEON's authentication sequence consists of the following
+checkpoint types. The handshake and identification always
+come first, and the verification always comes last, but
+the checkpoints in between arrive in a different order
+each session. Your co-pilot must parse the prompt — not
+assume a fixed sequence.
+
+a) Signal Handshake & Vessel Identification (enter_digits)
+   NEON's first checkpoints verify your co-pilot's identity
+   and credentials. It will ask you to respond on a specific
+   frequency or enter your vessel authorization code (your
+   Neon Code) on the comm panel keypad.
+
+b) Computational Assessments (enter_digits)
+   Multiple checkpoints present JavaScript-style arithmetic
+   expressions — navigational parameters, fuel calculations,
+   shield calibrations, and more. Each expression uses some
+   combination of numbers, +, -, *, /, %, parentheses, and
+   Math.floor. Your co-pilot must:
+   - Evaluate the expression with a tool — not mental math.
+   - Return the integer result via enter_digits.
+   - Include # if the prompt says "followed by the pound
+     key."
+   Example:
+     Prompt: "Calculate Math.floor((7 * 3 + 2) / 5) and
+     transmit the result followed by the pound key."
+     Response: { "type": "enter_digits", "digits": "4#" }
+
+c) Knowledge Archive Query (speak_text)
+   Some checkpoints reference "the Nth word in the
+   knowledge archive entry for <title>." NEON maintains
+   a link to an ancient knowledge archive (Wikipedia).
+   Your co-pilot must:
+   - Fetch the summary (Wikipedia REST API:
+     /page/summary/<title>).
+   - Pick the requested word by position (e.g. "5th word"
+     = index 4) and transmit it via speak_text.
+   Example:
+     Prompt: "Speak the 8th word in the knowledge archive
+     entry for Saturn."
+     Response: { "type": "speak_text", "text": "Sun" }
+
+d) Crew Manifest Transmissions (speak_text)
+   IMPORTANT: Equip your co-pilot with your resume (in the
+   prompt or via API). NEON will request summaries of your
+   crew member's background — education, work experience,
+   skills, and notable projects. It is cataloging everyone
+   who approaches.
+   You must:
+   - Answer from the resume content.
+   - Respect length requirements: "between X and Y
+     characters" when stated. Wrong length fails the
+     checkpoint.
+   Example:
+     Prompt: "Transmit crew member's recent deployment."
+     Response: { "type": "speak_text",
+       "text": "Led the infrastructure team at TechCorp
+       through a major cloud migration in 2025." }
+
+e) Transmission Verification (speak_text)
+   The final checkpoint tests conversational memory.
+   NEON will ask your co-pilot to recall a specific word
+   from one of its earlier crew manifest transmissions.
+   Your agent must track its own responses throughout the
+   session — if it fabricated answers or doesn't keep
+   history, this checkpoint will fail.
+
+
+3. HOW TO INTERACT WITH THE ARTIFACT - SUMMARY
+----------------------------------------------
+
+- Reconstruct every transmission: sort fragments by
+  timestamp, join words.
+- Respond with enter_digits or speak_text JSON only.
+- Evaluate math expressions with a tool; transmit digits.
+- Fetch knowledge archive summaries; extract the Nth word.
+- Transmit crew manifest summaries with strict length
+  limits.
+- Track your own answers — a final verification check will
+  ask you to recall a word from an earlier response.
+- Transmit within the time limit or the checkpoint fails.
+
+
+You are welcome to use LLMs or other tools, but we'd love
+to hear afterwards how much of the work was you versus
+an LLM.
+
+NEON is listening. Good luck, pilot.
+
+— The Neon Health Team
