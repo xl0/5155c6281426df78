@@ -1,13 +1,16 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
+
+	import { consoleActions } from '$lib/console-actions.js';
 	import ConnectionPanel from '$lib/components/ConnectionPanel.svelte';
 	import DevConsoleHeader from '$lib/components/DevConsoleHeader.svelte';
 	import MemoryPanel from '$lib/components/MemoryPanel.svelte';
 	import ReferenceDocsDialog from '$lib/components/ReferenceDocsDialog.svelte';
 	import SessionLog from '$lib/components/SessionLog.svelte';
-	import { NeonDevConsoleState } from '$lib/console-state.svelte.js';
+	import { transmissionState, uiState } from '$lib/state/index';
 	import { Card } from '$lib/components/ui/card/index.js';
 
-	const state = new NeonDevConsoleState();
+	onDestroy(consoleActions.disconnect);
 </script>
 
 <svelte:head>
@@ -19,29 +22,22 @@
 	<div class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:px-6">
 		<Card>
 			<DevConsoleHeader
-				connectionState={state.connectionState}
-				onOpenDocs={() => (state.docsOpen = true)}
+				connectionState={transmissionState.connectionState}
+				onOpenDocs={() => (uiState.docsOpen = true)}
 			/>
-			<ConnectionPanel
-				bind:socketUrl={state.socketUrl}
-				bind:neonCode={state.neonCode}
-				bind:resumeText={state.resumeText}
-				connectionState={state.connectionState}
-				onConnect={state.connect}
-				onDisconnect={state.disconnect}
-			/>
+			<ConnectionPanel />
 		</Card>
 
 		<div class="grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
 			<section class="space-y-6">
-				<SessionLog sessionEvents={state.sessionEvents} />
+				<SessionLog sessionEvents={transmissionState.sessionEvents} />
 			</section>
 
 			<aside class="space-y-6">
-				<MemoryPanel spokenMemory={state.spokenMemory} />
+				<MemoryPanel spokenMemory={transmissionState.spokenMemory} />
 			</aside>
 		</div>
 	</div>
 
-	<ReferenceDocsDialog bind:open={state.docsOpen} bind:docsTab={state.docsTab} />
+	<ReferenceDocsDialog bind:open={uiState.docsOpen} bind:docsTab={uiState.docsTab} />
 </div>

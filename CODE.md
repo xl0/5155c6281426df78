@@ -2,144 +2,104 @@
 
 ## Overview
 
-This is a small SvelteKit app for working on the NEON authentication puzzle. The main product surface is now the root `/` page, which acts as a websocket-based operator console for receiving challenges, drafting responses, and tracking session state.
+This repository is a SvelteKit app for the NEON authentication puzzle. The main UI is the root `/` page, which functions as a websocket console for connecting to NEON, receiving fragmented challenges, storing operator-provided reference data, configuring client-side agent settings, and showing session activity.
 
-## Routes
+## Route
 
 ### `src/routes/+page.svelte`
 
-Primary application UI.
+The root page composes the console UI.
 
-Current responsibilities:
+It includes:
 
-- Connect to `wss://neonhealth.software/agent-puzzle/challenge`
-- Accept Neon Code and pasted resume / crew manifest input
-- Reconstruct incoming fragmented transmissions by sorting fragments by timestamp
-- Parse and classify common prompt types
-- Auto-draft answers for:
-  - keypad / frequency prompts
-  - arithmetic prompts including `Math.floor`
-  - Wikipedia knowledge-archive prompts
-  - some final verification prompts based on previously sent spoken answers
-- Validate outgoing `speak_text` length constraints inferred from prompt text
-- Send `enter_digits` and `speak_text` websocket payloads
-- Persist spoken-response memory for later verification checkpoints
-- Show session history
-- Show incoming transmission fragments only inside collapsible session-log entries
-- Show the mission / protocol docs inside a modal dialog instead of inline on the page
-- Provide a dark-mode toggle
-
-UI structure on `/`:
-
-- Header card:
+- A header card with:
   - app title and description
   - dark-mode toggle
   - reference docs button
+  - a tabbed settings panel with:
+    - a Connection tab for websocket URL, Neon Code, crew manifest / resume, and connect controls
+    - an Agent Settings tab for provider, per-provider API key, and model selection
   - connection status badge
-  - websocket URL input
-  - Neon Code input
-  - resume textarea
-  - connect / disconnect actions
-- Main column:
-  - response composer card
-  - session log card
-- Sidebar:
-  - memory card with previously spoken transmissions
-- Modal:
-  - mission / protocol docs in tabs with scrollable content
+- A main column with the session log
+- A sidebar with the spoken-memory panel
+- A modal dialog with the mission and protocol docs
 
 ## Architecture
 
-- `src/routes/+page.svelte` is now a composition-only route that wires together the console UI components.
-- `src/lib/console-state.svelte.ts` owns the app's mutable websocket/session state using Svelte 5 runes.
-- `src/lib/protocol.ts` contains pure parsing and drafting helpers for reconstructed NEON prompts.
-- `src/lib/types.ts` defines the shared domain model used by both state and UI.
-- `src/lib/components/*.svelte` contains presentational pieces for the console layout.
+- `src/routes/+page.svelte` wires together the console components.
+- `src/lib/state/settings.svelte.ts` defines persisted app and agent configuration and exports `settingsState`.
+- `src/lib/state/ui.svelte.ts` defines volatile UI state and exports `uiState`.
+- `src/lib/state/transmission.svelte.ts` defines volatile websocket/session state and exports `transmissionState`.
+- `src/lib/state/agent.svelte.ts` defines volatile agent-facing state and exports `agentState`.
+- `src/lib/state/index.ts` re-exports the instantiated states.
+- `src/lib/console-actions.ts` contains the cross-state websocket and drafting actions.
+- `src/lib/agent-settings.ts` defines supported AI providers, API-key placeholders, and model lists for the client-side agent settings UI.
+- `src/lib/protocol.ts` provides prompt reconstruction and default advice objects.
+- `src/lib/types.ts` defines shared data shapes for websocket payloads, session events, prompt state, and spoken memory.
+- `src/lib/components/*.svelte` contains the UI pieces used by the root page.
+- `docs/resume.md` provides the default crew-manifest text loaded into persisted state on first use.
+- `docs/misson.md` and `docs/protocol.txt` provide the reference material shown in the modal dialog.
+
+## State Model
+
+### `src/lib/state/*`
+
+The app state is split into four instantiated singletons:
+
+- `settings`
+  - persisted browser state for `socketUrl`, `neonCode`, `resumeText`, `provider`, `apiKey`, and `model`
+  - provider-aware derived values such as the current provider config and available models
+- `ui`
+  - volatile UI state for the reference docs dialog: `docsOpen` and `docsTab`
+- `transmission`
+  - volatile websocket and NEON session state: `connectionState`, `currentPrompt`, `currentFragments`, `sessionEvents`, and `spokenMemory`
+  - state-local methods for session resets, socket bookkeeping, event logging, and transmission memory
+- `agent`
+  - volatile model-facing state: `currentAdvice`, `manualMode`, `manualValue`, `messages`, and `toolCalls`
+
+Behavior:
+
+- Opens and closes the websocket connection through `consoleActions`
+- Reconstructs incoming prompts from timestamped fragments
+- Stores session events and spoken memory inside `transmission`
+- Stores current model-response drafting state inside `agent`
+- Resets volatile agent and transmission session state when a new connection is opened
+
+## Protocol Helpers
+
+### `src/lib/protocol.ts`
+
+This file contains:
+
+- `reconstructMessage(fragments)` to sort fragments by timestamp and join them into a prompt string
+- `defaultAdvice` for the disconnected idle state
+- `connectedAdvice` for the connected idle state
+- `buildAdvice({ prompt })`, which returns a generic `ParsedChallenge` with `mode: null` and an agent-review note
 
 ## Shared Types
 
 ### `src/lib/types.ts`
 
-This file is the shared contract for the NEON console. It keeps websocket payloads, parsed prompt state, session history, and memory records aligned across the protocol helpers, state class, and Svelte components.
+Key types:
 
-#### `Fragment`
+- `Fragment`: one inbound NEON word fragment with a timestamp
+- `EnterDigitsPayload`: outbound keypad payload
+- `SpeakTextPayload`: outbound spoken-text payload
+- `OutgoingPayload`: union of the two outbound payload shapes
+- `SessionEvent`: one session log entry, optionally with original fragments
+- `ParsedChallenge`: prompt-state object with `mode`, `label`, `notes`, `draft`, and `auto`
+- `SpokenMemory`: saved pair of `{ prompt, text }` for prior spoken transmissions
+- `CharacterConstraint`: prompt-length constraint shape defined in the types file
 
-- Shape of a single inbound transmission fragment from NEON.
-- Used by `reconstructMessage(...)` in `src/lib/protocol.ts`.
-- Also attached to `SessionEvent.fragments` so the UI can show the raw challenge pieces in the session log.
+## UI Components
 
-#### `EnterDigitsPayload`
+- `ConnectionPanel.svelte` renders the tabbed settings UI for connection fields and agent provider/API key/model selection.
+- `SessionLog.svelte` renders the event timeline and shows raw incoming fragments in collapsible entries.
+- `MemoryPanel.svelte` renders saved spoken transmissions used for later verification.
+- `ReferenceDocsDialog.svelte` renders the mission and protocol docs in a wide modal with tabs.
+- `DevConsoleHeader.svelte` renders the page heading, docs trigger, and theme toggle.
 
-- Outbound websocket payload for keypad-style responses.
-- Sent when NEON expects numeric entry such as frequencies, handshake values, arithmetic results, or the Neon Code.
+## Styling
 
-#### `SpeakTextPayload`
-
-- Outbound websocket payload for spoken/text responses.
-- Sent for knowledge archive answers, crew manifest answers, and verification answers.
-
-#### `OutgoingPayload`
-
-- Union of `EnterDigitsPayload | SpeakTextPayload`.
-- Represents every valid outbound message the console can send.
-- `ParsedChallenge.mode` narrows to `OutgoingPayload['type']`, so drafting logic can tell the composer which response mode to use.
-
-#### `SessionEvent`
-
-- Log entry type for the session timeline.
-- `kind` drives the visual treatment of status, incoming, outgoing, error, and success entries.
-- `fragments` is only present for incoming challenge events, which lets the session log show both the reconstructed prompt and the sorted raw fragments.
-
-#### `ParsedChallenge`
-
-- Result of classifying a reconstructed NEON prompt.
-- Produced by `buildAdvice(...)` in `src/lib/protocol.ts`.
-- Consumed by `NeonDevConsoleState` to update the composer.
-- Fields:
-  - `mode`: recommended response mode, or `null` when manual review is required
-  - `label`: human-readable checkpoint classification
-  - `notes`: operator guidance for why the prompt was classified that way
-  - `draft`: prefilled response text/digits
-  - `auto`: whether the draft was prepared automatically
-
-#### `SpokenMemory`
-
-- Record of a previously sent `speak_text` response together with the prompt that produced it.
-- Stored in state after successful outbound spoken transmissions.
-- Used later by verification logic to answer prompts asking for a specific word from an earlier transmission.
-
-#### `CharacterConstraint`
-
-- Normalized form of prompt-imposed text-length rules.
-- Extracted from prompt text by `parseCharacterConstraint(...)` in `src/lib/protocol.ts`.
-- Used by state and UI to validate `speak_text` responses before sending and to display current constraints in the composer.
-
-## Type Relationships
-
-- Inbound flow:
-  - NEON sends `Fragment[]`
-  - `reconstructMessage(...)` turns those fragments into a prompt string
-  - `buildAdvice(...)` returns a `ParsedChallenge`
-  - `NeonDevConsoleState` uses that `ParsedChallenge` to set composer mode, notes, and draft value
-- Outbound flow:
-  - The composer edits either digits or text
-  - State packages that as an `OutgoingPayload`
-  - If the payload is `SpeakTextPayload`, state also saves a `SpokenMemory` entry
-- Logging flow:
-  - Every notable socket action is stored as a `SessionEvent`
-  - Incoming challenge events may retain their original `Fragment[]` for inspection in the UI
-- Validation flow:
-  - Prompt text may produce a `CharacterConstraint`
-  - That constraint is applied to outgoing `SpeakTextPayload` values before transmit
-
-## Styling / UI
-
-- Tailwind CSS v4 is configured in `src/routes/layout.css`
-- shadcn-svelte has been initialized and is the preferred component layer
-
-## Current Limitations
-
-- Crew-manifest answers are still primarily manual; the page stores the resume for operator reference but does not yet synthesize resume-based answers automatically
-- Arithmetic evaluation is intentionally narrow and regex-gated
-- Verification prompt parsing is heuristic and may need refinement for additional prompt shapes
-- The docs source file is currently named `docs/misson.md`
+- Tailwind CSS v4 is configured in `src/routes/layout.css`.
+- shadcn-svelte is the component layer used throughout the UI.
