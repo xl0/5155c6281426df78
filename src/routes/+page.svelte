@@ -3,7 +3,6 @@
 	import DevConsoleHeader from '$lib/components/DevConsoleHeader.svelte';
 	import MemoryPanel from '$lib/components/MemoryPanel.svelte';
 	import ReferenceDocsDialog from '$lib/components/ReferenceDocsDialog.svelte';
-	import ResponseComposer from '$lib/components/ResponseComposer.svelte';
 	import SessionLog from '$lib/components/SessionLog.svelte';
 	import { NeonDevConsoleState } from '$lib/console-state.svelte.js';
 	import { Card } from '$lib/components/ui/card/index.js';
@@ -35,16 +34,6 @@
 
 		<div class="grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
 			<section class="space-y-6">
-				<ResponseComposer
-					bind:manualMode={state.manualMode}
-					bind:manualValue={state.manualValue}
-					currentAdvice={state.currentAdvice}
-					characterConstraint={state.characterConstraint}
-					manualLength={state.manualLength}
-					resumeText={state.resumeText}
-					onSend={state.sendManualResponse}
-				/>
-
 				<SessionLog sessionEvents={state.sessionEvents} />
 			</section>
 

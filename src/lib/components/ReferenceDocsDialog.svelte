@@ -21,7 +21,7 @@
 </script>
 
 <Dialog bind:open>
-	<DialogContent class="h-[90vh] max-w-[min(96vw,1400px)]">
+	<DialogContent class="h-[90vh] w-[95vw] max-w-[95vw] sm:max-w-[90vw]">
 		<DialogHeader>
 			<DialogTitle>Reference Docs</DialogTitle>
 			<DialogDescription>Mission briefing and protocol, hidden until needed.</DialogDescription>
@@ -35,13 +35,13 @@
 			<TabsContent value="mission">
 				<ScrollArea class="h-[70vh] rounded-xl border bg-muted/20 p-4">
 					<pre
-						class="text-xs leading-6 whitespace-pre-wrap text-muted-foreground">{missionDoc}</pre>
+						class="text-sm leading-7 whitespace-pre-wrap text-foreground">{missionDoc}</pre>
 				</ScrollArea>
 			</TabsContent>
 			<TabsContent value="protocol">
 				<ScrollArea class="h-[70vh] rounded-xl border bg-muted/20 p-4">
 					<pre
-						class="text-xs leading-6 whitespace-pre-wrap text-muted-foreground">{protocolDoc}</pre>
+						class="text-sm leading-7 whitespace-pre-wrap text-foreground">{protocolDoc}</pre>
 				</ScrollArea>
 			</TabsContent>
 		</Tabs>

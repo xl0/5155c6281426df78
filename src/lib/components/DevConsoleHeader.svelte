@@ -18,12 +18,7 @@
 <CardHeader>
 	<div class="flex flex-wrap items-start justify-between gap-4">
 		<div>
-			<p class="text-sm tracking-[0.3em] text-muted-foreground uppercase">NEON Dev Console</p>
-			<CardTitle class="mt-2 text-3xl">Authentication cockpit</CardTitle>
-			<CardDescription class="mt-3 max-w-3xl text-sm leading-6">
-				Connect to the challenge socket, reconstruct fragmented prompts, draft compliant responses,
-				and keep your session history intact for final verification.
-			</CardDescription>
+			<p class="text-sm tracking-[0.3em] text-muted-foreground uppercase">NEON Console</p>
 		</div>
 		<div class="flex flex-wrap items-center justify-end gap-3">
 			<Button variant="outline" size="icon" class="relative" onclick={toggleMode}>
@@ -36,7 +31,6 @@
 				<span class="sr-only">Toggle theme</span>
 			</Button>
 			<Button variant="outline" onclick={onOpenDocs}>Reference docs</Button>
-			<Badge variant="secondary">{connectionState}</Badge>
 		</div>
 	</div>
 </CardHeader>

@@ -1,4 +1,7 @@
 import { onDestroy } from 'svelte';
+import { PersistedState } from 'runed';
+
+import defaultResumeText from '../../docs/resume.md?raw';
 
 import {
 	buildAdvice,
@@ -23,9 +26,9 @@ type IncomingPayload =
 	| { type: 'error'; message: string };
 
 export class NeonDevConsoleState {
-	socketUrl = $state(defaultSocketUrl);
-	neonCode = $state('');
-	resumeText = $state('');
+	private persistedSocketUrl = new PersistedState('neon-socket-url', defaultSocketUrl);
+	private persistedNeonCode = new PersistedState('neon-code', '');
+	private persistedResumeText = new PersistedState('neon-resume-text', defaultResumeText.trim());
 	manualMode = $state<OutgoingPayload['type']>('speak_text');
 	manualValue = $state('');
 	currentPrompt = $state('');
@@ -42,6 +45,30 @@ export class NeonDevConsoleState {
 		onDestroy(() => {
 			this.disconnect();
 		});
+	}
+
+	get socketUrl() {
+		return this.persistedSocketUrl.current;
+	}
+
+	set socketUrl(value: string) {
+		this.persistedSocketUrl.current = value;
+	}
+
+	get neonCode() {
+		return this.persistedNeonCode.current;
+	}
+
+	set neonCode(value: string) {
+		this.persistedNeonCode.current = value;
+	}
+
+	get resumeText() {
+		return this.persistedResumeText.current;
+	}
+
+	set resumeText(value: string) {
+		this.persistedResumeText.current = value;
 	}
 
 	get characterConstraint() {
