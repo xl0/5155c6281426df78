@@ -1,0 +1,4 @@
+# neverthrow
+
+Complete API documentation for Result and ResultAsync types with methods for construction, transformation, chaining, error recovery, side effects, and utilities for wrapping throwable functions and combining multiple results.
+

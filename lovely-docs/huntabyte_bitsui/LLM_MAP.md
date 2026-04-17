@@ -1,0 +1,71 @@
+# huntabyte/bitsui
+
+Complete reference for Bits UI: 50+ headless Svelte components with flexible state management, accessibility, styling via data attributes/CSS variables, child snippet rendering, date/time handling, and utilities.
+
+  components/: Comprehensive headless component library for Svelte with flexible state management, keyboard navigation, accessibility, and customizable styling.
+    ./components/accordion.md: Collapsible sections component supporting single/multiple open items, keyboard navigation, smooth transitions, and browser search within collapsed content.
+    ./components/alert-dialog.md: Modal dialog component with compound sub-components; supports state binding, focus management, scroll locking, escape/outside interaction customization, and nested dialogs with depth tracking.
+    ./components/aspect-ratio.md: AspectRatio.Root component with ratio prop (number, default 1), bindable ref, children/child snippets, data-aspect-ratio-root attribute.
+    ./components/avatar.md: Avatar component with Root/Image/Fallback primitives; handles image loading states, supports delayMs, loadingStatus binding, and fallback display on load failure.
+    ./components/button.md: Button/anchor hybrid component; renders as button by default, anchor when href provided; supports disabled state and DOM ref binding.
+    ./components/calendar.md: Date picker component with single/multiple selection, validation (min/max/disabled/unavailable dates), localization, customizable appearance (fixed weeks, multiple months, paged navigation), and month/year selectors; uses @internationalized/date for date handling.
+    ./components/checkbox.md: Tri-state checkbox component with checked/unchecked/indeterminate states, form integration, groups, accessibility, and flexible state management (two-way binding or fully controlled).
+    ./components/collapsible.md: Collapsible component with Root/Trigger/Content sub-components; supports controlled/uncontrolled state, Svelte transitions via forceMount+child snippet, and hiddenUntilFound for browser search integration.
+    ./components/combobox.md: Searchable dropdown with single/multiple selection, keyboard navigation, Floating UI positioning, scroll buttons, item grouping, and Svelte transitions support.
+    ./components/command.md: Searchable command menu with keyboard navigation, custom filtering, grouping, grid layout, modal support, and imperative API for programmatic control.
+    ./components/context-menu.md: Right-click context menu with nested submenus, checkbox/radio items, state binding, floating UI positioning, keyboard nav, and Svelte transition support.
+    ./components/date-field.md: DateField: customizable date input component with segment-based editing (day/month/year/hour/minute/second/timezone), validation (min/max/custom), granularity control, localization, bindable state, and readonly segment support.
+    ./components/date-picker.md: DatePicker component combining Date Field + Calendar + Popover; supports value/placeholder/open state binding; validation via isDateUnavailable/isDateDisabled/validate; configurable via weekStartsOn, granularity, locale, minValue/maxValue, numberOfMonths, closeOnDateSelect, preventDeselect; extensive data attributes for styling selected/disabled/readonly/today/outside-month dates.
+    ./components/date-range-field.md: DateRangeField: dual date field component with start/end inputs, bindable value/placeholder, granularity/validation/min-max/locale/hourCycle/readonly options, segment-based rendering.
+    ./components/date-range-picker.md: DateRangePicker: composite date range selector with segmented input field and calendar popup; supports two-way/controlled binding, date constraints (min/max/unavailable/disabled), range constraints (minDays/maxDays), granularity control (day/hour/minute/second), locale/formatting options, and extensive customization via sub-components (Label, Input, Segment, Trigger, Content, Calendar, Header, Grid, Cell, Day, MonthSelect, YearSelect) with data attributes for styling.
+    ./components/dialog.md: Modal dialog component with compound structure, focus management, customizable escape/outside-click behavior, nested dialog support with CSS variables, Svelte transition support via forceMount, and form integration patterns.
+    ./components/dropdown-menu.md: Dropdown menu with items, groups, checkboxes, radio buttons, nested submenus, keyboard navigation, state binding, transitions, and floating UI positioning.
+    ./components/label.md: Label component for associating text with form inputs; supports bindable ref, snippet children, render delegation, and data-label-root attribute.
+    ./components/link-preview.md: LinkPreview component for displaying content previews on hover/focus with Floating UI positioning, state management, transitions, custom anchoring, and configurable interaction behavior.
+    ./components/menubar.md: Menubar component with nested menus, radio/checkbox items, keyboard navigation, floating UI positioning, and state management via two-way or function bindings.
+    ./components/meter.md: Meter component for displaying static measurements within a range; props: value/min/max, data attributes for styling, accessibility via aria-labelledby/aria-label/aria-valuetext.
+    ./components/navigation-menu.md: Accessible navigation menu with dropdowns, submenus, Viewport for smooth transitions, Indicator for active state, force mounting, and configurable hover/click behavior.
+    ./components/pagination.md: Pagination component with Root, Page, PrevButton, NextButton; supports bindable page state, configurable items-per-page and sibling count, ellipsis rendering, keyboard navigation with optional looping, and data attributes for styling.
+    ./components/pin-input.md: PIN input component for OTP/2FA/MFA with invisible input, customizable cells, state binding, paste transformation, input patterns, form integration, and accessibility.
+    ./components/popover.md: Floating panel component with positioning, focus management, scroll lock, escape/outside-click handling, custom anchoring, and transition support.
+    ./components/progress.md: Progress component for task completion tracking with value/min/max props, indeterminate state support, and accessibility attributes.
+    ./components/radio-group.md: Radio group component for selecting one value from multiple options; supports form submission, two-way binding, disabled/readonly states, vertical/horizontal orientation with arrow-key navigation, and looping.
+    ./components/range-calendar.md: Date range calendar with min/max day constraints, disabled date handling, multi-month display, and comprehensive data attributes for styling range states.
+    ./components/rating-group.md: Star rating component with customizable items, half-ratings, form integration, keyboard navigation (direct number input, arrows, Home/End), RTL support, and ARIA slider pattern.
+    ./components/scroll-area.md: Scroll area component with four visibility types (hover/scroll/auto/always), customizable hide delay, and orientation control; compose from Root, Viewport, Scrollbar, Thumb, Corner subcomponents.
+    ./components/select.md: Dropdown select component with single/multiple selection, typeahead search, keyboard navigation, Floating UI positioning, scroll buttons, grouping, and full customization via sub-components.
+    ./components/separator.md: Headless separator component with horizontal/vertical orientation, decorative flag for a11y, and data attributes for styling.
+    ./components/slider.md: Slider component for selecting values from continuous ranges; supports single/multiple thumbs, vertical/horizontal, discrete steps, ticks, labels, RTL, and form integration.
+    ./components/switch.md: Toggle switch component with state binding, form support, data attributes for styling, and WAI-ARIA accessibility.
+    ./components/tabs.md: Tabbed content organizer with horizontal/vertical orientation, automatic/manual activation modes, bindable value state, and keyboard navigation with looping.
+    ./components/time-field.md: TimeField: customizable time input with segments (hour/minute/second/dayPeriod/timeZoneName), validation (min/max/custom), granularity control, localization, state binding, readonly segments, form submission support.
+    ./components/time-range-field.md: TimeRangeField combines two Time Fields for start/end time input with bindable value/placeholder (TimeRange/TimeValue), validation, min/max constraints, granularity/hourCycle/locale config, and segment-level control.
+    ./components/toggle.md: Toggle button with bindable pressed state, onPressedChange callback, disabled prop, and data-state attribute for styling.
+    ./components/toggle-group.md: Toggle group component supporting single or multiple selection modes with roving focus navigation, state binding, and orientation control.
+    ./components/toolbar.md: Toolbar with toggle groups (single/multiple), buttons, and links; state via bind:value or function binding; data attributes for styling state.
+    ./components/tooltip.md: Tooltip component for hover-triggered supplementary info; requires Provider wrapper; supports state binding, custom positioning via Floating UI or static, transitions with forceMount, custom anchors; not mobile-compatible; non-essential content only.
+  policies/: Contribution guidelines for changelog entries and issue/discussion management
+    ./policies/changelog-conventions.md: Changelog entry format: `- <type>(<scope>): <description>` with types (fix/feat/improve/chore/docs), component or general scope, concise lowercase verb-first descriptions with backticks for code, 10-15 words max.
+    ./policies/code-of-conduct.md: Community code of conduct: be respectful and constructive; feature requests start as discussions; report violations to maintainers; applies to GitHub, Discord, and official channels.
+    ./policies/tracking-bugs-and-feature-requests.md: Use Issues for confirmed bugs and accepted feature requests; use Discussions for proposing features, design discussions, and questions; feature requests must start as discussions and only become issues after acceptance and refinement.
+  type_helpers/: Type utilities for managing component props when creating custom wrappers and adding ref support.
+    ./type_helpers/with-element-ref.md: Type helper adding optional `ref` prop to components: `WithElementRef<PropsType, ElementType>` intersects props with `{ ref?: ElementType | null }`
+    ./type_helpers/withoutchild_type_helper.md: WithoutChild type helper excludes child snippet prop from component types for custom wrappers managing internal children.
+    ./type_helpers/withoutchildren_type_helper.md: Type helper to exclude `children` snippet prop from component props when building wrappers that manage children internally.
+    ./type_helpers/withoutchildrenorchild_type_helper.md: Type helper excluding child/children props from component types; use when wrapping components that manage their own children.
+  utilities/: Helper utilities for configuration, state tracking, props merging, DOM portalling, and ID generation.
+    ./utilities/bits-config.md: Context provider for centralized default props (defaultPortalTo, defaultLocale) with scoped inheritance and component-level override support.
+    ./utilities/is-using-keyboard.md: IsUsingKeyboard utility tracks keyboard activity via global shared state; instantiate and read `.current` property for boolean keyboard usage status.
+    ./utilities/mergeprops.md: Merges props objects with event handler chaining (preventDefault stops chain), function chaining, clsx class merging, and style object/string merging with override semantics.
+    ./utilities/portal.md: Portal component renders children to specified DOM location (body by default) via `to` prop; disable with `disabled` prop; configure default target via BitsConfig's `defaultPortalTo`.
+    ./utilities/useid.md: useId() generates unique IDs for element association; used internally by all components, exposed for public use.
+  ./child-snippet.md: Child snippet enables custom element rendering in Bits UI components with full prop merging, Svelte feature support, and special two-level structure for floating components.
+  ./dates-and-times.md: DateValue types (CalendarDate, CalendarDateTime, ZonedDateTime) from @internationalized/date for locale/timezone-aware date handling; immutable with .set/.add/.subtract/.cycle methods; 1-indexed months; DateFormatter for formatting; placeholder prop for initial values and calendar navigation.
+  ./getting-started.md: Install with npm, import components, style via class props or data attributes, full TypeScript support.
+  ./introduction.md: Headless, unstyled Svelte components with TypeScript, WAI-ARIA accessibility, and full composability via render delegation and event overrides.
+  ./llms.txt_access.md: Access LLM-friendly documentation by appending /llms.txt to page URLs; root index and full consolidated docs available at bits-ui.com/llms.txt and bits-ui.com/docs/llms.txt respectively.
+  ./migration-guide-v0-to-v1.md: v0→v1 breaking changes: el→ref, asChild→child snippet, let:→snippet props, transition props removed; multiple→required type prop; selected→value; indicator components→children snippet; auto-portalling→explicit Portal wrapper; Checkbox.Input removed; AlertDialog.Action no-close; Pin Input overhauled; Slider type prop+onValueCommit; Tooltip.Provider required.
+  ./ref-prop.md: Bindable ref prop accesses underlying HTML elements for DOM manipulation; works with child snippets via IDs; use WithElementRef helper for custom components.
+  ./state-management.md: Two state management patterns: two-way binding for simple cases, function binding (getter/setter) for complex transformations, conditionals, debouncing, or external state integration.
+  ./styling.md: Five styling approaches (CSS frameworks, data attributes, global classes, scoped styles, style prop); state styling via data attributes and CSS variables; animation techniques combining state selectors with keyframes.
+  ./transitions.md: Apply transitions to Bits UI components via forceMount + child snippet pattern; Floating UI components require wrapperProps wrapper element.

@@ -1,0 +1,1 @@
+.svelte.js and .svelte.ts files are module files that behave like regular .js or .ts modules but with the added ability to use runes. This enables creating reusable reactive logic and sharing reactive state across an application. Note that reassigned state cannot be exported across modules. This feature was introduced in Svelte 5.
