@@ -3,12 +3,10 @@
 
 	import { consoleActions } from '$lib/console-actions.js';
 	import ConnectionPanel from '$lib/components/ConnectionPanel.svelte';
-	import DevConsoleHeader from '$lib/components/DevConsoleHeader.svelte';
 	import MemoryPanel from '$lib/components/MemoryPanel.svelte';
 	import ReferenceDocsDialog from '$lib/components/ReferenceDocsDialog.svelte';
 	import SessionLog from '$lib/components/SessionLog.svelte';
 	import { transmissionState, uiState } from '$lib/state/index';
-	import { Card } from '$lib/components/ui/card/index.js';
 
 	onDestroy(consoleActions.disconnect);
 </script>
@@ -20,13 +18,7 @@
 
 <div class="min-h-screen bg-background text-foreground">
 	<div class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:px-6">
-		<Card>
-			<DevConsoleHeader
-				connectionState={transmissionState.connectionState}
-				onOpenDocs={() => (uiState.docsOpen = true)}
-			/>
-			<ConnectionPanel />
-		</Card>
+		<ConnectionPanel />
 
 		<div class="grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
 			<section class="space-y-6">

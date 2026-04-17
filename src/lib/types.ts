@@ -23,21 +23,7 @@ export type SessionEvent = {
 	fragments?: Fragment[];
 };
 
-export type ParsedChallenge = {
-	mode: OutgoingPayload['type'] | null;
-	label: string;
-	notes: string[];
-	draft: string;
-	auto: boolean;
-};
-
 export type SpokenMemory = {
 	prompt: string;
 	text: string;
-};
-
-export type CharacterConstraint = {
-	kind: 'exact' | 'range' | 'max';
-	min: number;
-	max: number;
 };

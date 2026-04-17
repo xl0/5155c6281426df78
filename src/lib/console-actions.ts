@@ -1,5 +1,4 @@
-import { buildAdvice, reconstructMessage } from '$lib/protocol';
-import type { OutgoingPayload } from '$lib/types';
+import { reconstructMessage } from '$lib/protocol';
 
 import { agentState, settingsState, transmissionState } from '$lib/state/index';
 
@@ -25,19 +24,6 @@ async function handleSocketMessage(event: MessageEvent) {
 		const prompt = reconstructMessage(payload.message);
 		transmissionState.setChallenge(prompt, payload.message);
 		transmissionState.logEvent('incoming', 'Challenge', prompt, payload.message);
-
-		try {
-			const advice = await buildAdvice({ prompt });
-			agentState.applyAdvice(advice);
-		} catch (error) {
-			agentState.applyAdvice({
-				mode: null,
-				label: 'Manual Review Needed',
-				notes: [error instanceof Error ? error.message : 'Could not prepare a draft response.'],
-				draft: '',
-				auto: false
-			});
-		}
 	} catch (error) {
 		transmissionState.logEvent(
 			'error',
@@ -80,43 +66,7 @@ function disconnect() {
 	transmissionState.disconnect();
 }
 
-function sendManualResponse() {
-	const websocket = transmissionState.socket;
-
-	if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-		transmissionState.logEvent('error', 'Send Failed', 'Connect to NEON before transmitting.');
-		return;
-	}
-
-	if (!agentState.manualValue.trim()) {
-		transmissionState.logEvent('error', 'Send Failed', 'Response payload is empty.');
-		return;
-	}
-
-	if (agentState.manualMode === 'speak_text' && agentState.manualValue.length > 256) {
-		transmissionState.logEvent(
-			'error',
-			'Send Failed',
-			'speak_text responses must stay at or under 256 characters.'
-		);
-		return;
-	}
-
-	const payload: OutgoingPayload =
-		agentState.manualMode === 'enter_digits'
-			? { type: 'enter_digits', digits: agentState.manualValue }
-			: { type: 'speak_text', text: agentState.manualValue };
-
-	websocket.send(JSON.stringify(payload));
-	transmissionState.logEvent('outgoing', 'Transmitted', JSON.stringify(payload));
-
-	if (payload.type === 'speak_text') {
-		transmissionState.rememberSpokenTransmission(payload.text);
-	}
-}
-
 export const consoleActions = {
 	connect,
-	disconnect,
-	sendManualResponse
+	disconnect
 };
