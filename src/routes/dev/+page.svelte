@@ -1,6 +1,8 @@
 <script lang="ts">
 	import missionDoc from '../../../docs/misson.md?raw';
 	import protocolDoc from '../../../docs/protocol.txt?raw';
+	import MoonIcon from '@lucide/svelte/icons/moon';
+	import SunIcon from '@lucide/svelte/icons/sun';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import {
@@ -10,11 +12,19 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card/index.js';
+	import {
+		Dialog,
+		DialogContent,
+		DialogDescription,
+		DialogHeader,
+		DialogTitle
+	} from '$lib/components/ui/dialog/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
+	import { toggleMode } from 'mode-watcher';
 
 	type Fragment = {
 		word: string;
@@ -80,6 +90,7 @@
 		auto: false
 	});
 	let docsTab = $state<'mission' | 'protocol'>('mission');
+	let docsOpen = $state(false);
 	let sessionEvents = $state<SessionEvent[]>([]);
 	let spokenMemory = $state<SpokenMemory[]>([]);
 	let connectionState = $state<'disconnected' | 'connecting' | 'connected'>('disconnected');
@@ -490,49 +501,52 @@
 							responses, and keep your session history intact for final verification.
 						</CardDescription>
 					</div>
-					<Badge variant="secondary">{connectionState}</Badge>
+					<div class="flex flex-wrap items-center justify-end gap-3">
+						<Button variant="outline" size="icon" class="relative" onclick={toggleMode}>
+							<SunIcon
+								class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"
+							/>
+							<MoonIcon
+								class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"
+							/>
+							<span class="sr-only">Toggle theme</span>
+						</Button>
+						<Button variant="outline" onclick={() => (docsOpen = true)}>Reference docs</Button>
+						<Badge variant="secondary">{connectionState}</Badge>
+					</div>
 				</div>
 			</CardHeader>
+			<CardContent class="grid gap-4 lg:grid-cols-2">
+				<label class="space-y-2">
+					<span class="text-sm font-medium">WebSocket URL</span>
+					<Input bind:value={socketUrl} />
+				</label>
+				<label class="space-y-2">
+					<span class="text-sm font-medium">Neon Code</span>
+					<Input bind:value={neonCode} placeholder="Enter vessel authorization code" />
+				</label>
+
+				<label class="space-y-2 lg:col-span-2">
+					<span class="text-sm font-medium">Crew Manifest / Resume</span>
+					<Textarea
+						bind:value={resumeText}
+						rows={7}
+						placeholder="Paste the resume or crew manifest here for manual crew-transmission answers."
+					/>
+				</label>
+
+				<div class="flex flex-wrap items-center gap-3 lg:col-span-2">
+					<Button onclick={connect}
+						>{connectionState === 'connected' ? 'Reconnect' : 'Connect'}</Button
+					>
+					<Button variant="outline" onclick={disconnect}>Disconnect</Button>
+					<Badge variant="outline">Status: {connectionState}</Badge>
+				</div>
+			</CardContent>
 		</Card>
 
 		<div class="grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
 			<section class="space-y-6">
-				<Card>
-					<CardHeader>
-						<CardTitle>Mission setup</CardTitle>
-						<CardDescription
-							>Load your access details before opening the comm channel.</CardDescription
-						>
-					</CardHeader>
-					<CardContent class="grid gap-4 lg:grid-cols-2">
-						<label class="space-y-2">
-							<span class="text-sm font-medium">WebSocket URL</span>
-							<Input bind:value={socketUrl} />
-						</label>
-						<label class="space-y-2">
-							<span class="text-sm font-medium">Neon Code</span>
-							<Input bind:value={neonCode} placeholder="Enter vessel authorization code" />
-						</label>
-
-						<label class="space-y-2 lg:col-span-2">
-							<span class="text-sm font-medium">Crew Manifest / Resume</span>
-							<Textarea
-								bind:value={resumeText}
-								rows={7}
-								placeholder="Paste the resume or crew manifest here for manual crew-transmission answers."
-							/>
-						</label>
-
-						<div class="flex flex-wrap items-center gap-3 lg:col-span-2">
-							<Button onclick={connect}
-								>{connectionState === 'connected' ? 'Reconnect' : 'Connect'}</Button
-							>
-							<Button variant="outline" onclick={disconnect}>Disconnect</Button>
-							<Badge variant="outline">Status: {connectionState}</Badge>
-						</div>
-					</CardContent>
-				</Card>
-
 				<div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
 					<Card>
 						<CardHeader>
@@ -651,51 +665,6 @@
 			<aside class="space-y-6">
 				<Card>
 					<CardHeader>
-						<CardTitle>Protocol Summary</CardTitle>
-					</CardHeader>
-					<CardContent class="space-y-3 text-sm leading-6 text-muted-foreground">
-						<p>Sort every fragmented challenge by timestamp before interpreting it.</p>
-						<p>Only send one JSON object per checkpoint: `enter_digits` or `speak_text`.</p>
-						<p>
-							Use the Neon Code for vessel identification and the resume for crew manifest prompts.
-						</p>
-						<p>
-							Keep spoken replies under 256 characters and respect any tighter prompt-specific
-							limits.
-						</p>
-						<p>Remember earlier spoken replies; NEON can ask for a specific word later.</p>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Reference Docs</CardTitle>
-						<CardDescription>Live copies of the mission briefing and protocol.</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<Tabs bind:value={docsTab} class="gap-4">
-							<TabsList class="grid w-full grid-cols-2">
-								<TabsTrigger value="mission">Mission</TabsTrigger>
-								<TabsTrigger value="protocol">Protocol</TabsTrigger>
-							</TabsList>
-							<TabsContent value="mission">
-								<ScrollArea class="h-[70vh] rounded-xl border bg-muted/20 p-4">
-									<pre
-										class="text-xs leading-6 whitespace-pre-wrap text-muted-foreground">{missionDoc}</pre>
-								</ScrollArea>
-							</TabsContent>
-							<TabsContent value="protocol">
-								<ScrollArea class="h-[70vh] rounded-xl border bg-muted/20 p-4">
-									<pre
-										class="text-xs leading-6 whitespace-pre-wrap text-muted-foreground">{protocolDoc}</pre>
-								</ScrollArea>
-							</TabsContent>
-						</Tabs>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader>
 						<CardTitle>Memory</CardTitle>
 						<CardDescription
 							>Spoken transmissions saved for the final verification step.</CardDescription
@@ -724,4 +693,32 @@
 			</aside>
 		</div>
 	</div>
+
+	<Dialog bind:open={docsOpen}>
+		<DialogContent class="h-[90vh] max-w-[min(96vw,1400px)]">
+			<DialogHeader>
+				<DialogTitle>Reference Docs</DialogTitle>
+				<DialogDescription>Mission briefing and protocol, hidden until needed.</DialogDescription>
+			</DialogHeader>
+
+			<Tabs bind:value={docsTab} class="gap-4">
+				<TabsList class="grid w-full grid-cols-2">
+					<TabsTrigger value="mission">Mission</TabsTrigger>
+					<TabsTrigger value="protocol">Protocol</TabsTrigger>
+				</TabsList>
+				<TabsContent value="mission">
+					<ScrollArea class="h-[70vh] rounded-xl border bg-muted/20 p-4">
+						<pre
+							class="text-xs leading-6 whitespace-pre-wrap text-muted-foreground">{missionDoc}</pre>
+					</ScrollArea>
+				</TabsContent>
+				<TabsContent value="protocol">
+					<ScrollArea class="h-[70vh] rounded-xl border bg-muted/20 p-4">
+						<pre
+							class="text-xs leading-6 whitespace-pre-wrap text-muted-foreground">{protocolDoc}</pre>
+					</ScrollArea>
+				</TabsContent>
+			</Tabs>
+		</DialogContent>
+	</Dialog>
 </div>
