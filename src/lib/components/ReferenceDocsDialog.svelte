@@ -34,14 +34,12 @@
 			</TabsList>
 			<TabsContent value="mission">
 				<ScrollArea class="h-[70vh] rounded-xl border bg-muted/20 p-4">
-					<pre
-						class="text-sm leading-7 whitespace-pre-wrap text-foreground">{missionDoc}</pre>
+					<pre class="text-sm leading-7 whitespace-pre-wrap text-foreground">{missionDoc}</pre>
 				</ScrollArea>
 			</TabsContent>
 			<TabsContent value="protocol">
 				<ScrollArea class="h-[70vh] rounded-xl border bg-muted/20 p-4">
-					<pre
-						class="text-sm leading-7 whitespace-pre-wrap text-foreground">{protocolDoc}</pre>
+					<pre class="text-sm leading-7 whitespace-pre-wrap text-foreground">{protocolDoc}</pre>
 				</ScrollArea>
 			</TabsContent>
 		</Tabs>

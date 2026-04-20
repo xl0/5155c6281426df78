@@ -1,6 +1,6 @@
 import { reconstructMessage } from '$lib/protocol';
 
-import { agentState, settingsState, transmissionState } from '$lib/state/index';
+import { agentState, loggerState, settingsState, transmissionState } from '$lib/state/index';
 
 type IncomingPayload =
 	| { type: 'challenge'; message: { word: string; timestamp: number }[] }
@@ -12,23 +12,22 @@ async function handleSocketMessage(event: MessageEvent) {
 		const payload = JSON.parse(String(event.data)) as IncomingPayload;
 
 		if (payload.type === 'success') {
-			transmissionState.logEvent('success', 'Access Granted', 'Authentication complete.');
+			loggerState.log('transmission:success', 'Authentication complete.');
 			return;
 		}
 
 		if (payload.type === 'error') {
-			transmissionState.logEvent('error', 'Rejected', payload.message);
+			loggerState.log('transmission:error', payload.message);
 			return;
 		}
 
 		const prompt = reconstructMessage(payload.message);
-		transmissionState.setChallenge(prompt, payload.message);
-		transmissionState.logEvent('incoming', 'Challenge', prompt, payload.message);
+		await transmissionState.handleIncomingMessage(prompt, payload.message);
 	} catch (error) {
-		transmissionState.logEvent(
-			'error',
-			'Parse Error',
-			error instanceof Error ? error.message : 'Unknown message error'
+		loggerState.log(
+			'transmission:error',
+			error instanceof Error ? error.message : 'Unknown message error',
+			{ rawData: String(event.data) }
 		);
 	}
 }
@@ -36,25 +35,29 @@ async function handleSocketMessage(event: MessageEvent) {
 function connect() {
 	if (transmissionState.socket) transmissionState.disconnect();
 
+	loggerState.reset();
 	transmissionState.resetForConnection();
 	agentState.resetForConnection();
+	transmissionState.setIncomingHandler((message) => {
+		agentState.enqueueChallenge(message);
+	});
 
 	const websocket = new WebSocket(settingsState.socketUrl);
 	transmissionState.setSocket(websocket);
 
 	websocket.onopen = () => {
 		transmissionState.setConnected();
-		transmissionState.logEvent('status', 'Connected', settingsState.socketUrl);
+		loggerState.log('transmission:status', `Connected to ${settingsState.socketUrl}`);
 	};
 
 	websocket.onclose = () => {
 		transmissionState.setDisconnected();
-		transmissionState.logEvent('status', 'Disconnected', 'Socket closed');
+		loggerState.log('transmission:status', 'Socket closed');
 		transmissionState.clearSocket();
 	};
 
 	websocket.onerror = () => {
-		transmissionState.logEvent('error', 'Socket Error', 'The websocket reported an error.');
+		loggerState.log('transmission:error', 'The websocket reported an error.');
 	};
 
 	websocket.onmessage = async (event) => {

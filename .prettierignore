@@ -1,3 +1,21 @@
+
+# Ignore everything by default
+*
+
+# Keep source files formatted
+!src/
+!src/**
+
+# Exclude generated shadcn UI components
+src/lib/components/ui/
+
+# Keep Svelte app config formatted
+!.prettierrc
+!eslint.config.js
+!svelte.config.js
+!tsconfig.json
+!vite.config.ts
+
 # Package Managers
 package-lock.json
 pnpm-lock.yaml

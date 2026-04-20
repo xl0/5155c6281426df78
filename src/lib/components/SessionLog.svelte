@@ -1,76 +1,95 @@
 <script lang="ts">
-	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { Collapsible } from 'bits-ui';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import {
-		Card,
-		CardContent,
-		CardDescription,
-		CardHeader,
-		CardTitle
-	} from '$lib/components/ui/card/index.js';
-	import type { SessionEvent } from '$lib/types';
+	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card/index.js';
+	import type { LogEntry } from '$lib/types';
 
-	let { sessionEvents }: { sessionEvents: SessionEvent[] } = $props();
+	let { sessionEvents }: { sessionEvents: LogEntry[] } = $props();
+
+	function formatTimestamp(timestamp: string) {
+		return new Date(timestamp).toLocaleTimeString([], {
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit'
+		});
+	}
+
+	function formatRelativeTimestamp(current: string, previous: string) {
+		const diffMs = Math.abs(new Date(current).getTime() - new Date(previous).getTime());
+
+		if (diffMs < 1000) return `+${diffMs}ms`;
+
+		const diffSeconds = diffMs / 1000;
+		if (diffSeconds < 60) return `+${diffSeconds.toFixed(diffSeconds < 10 ? 1 : 0)}s`;
+
+		const diffMinutes = Math.floor(diffSeconds / 60);
+		const remainingSeconds = Math.round(diffSeconds % 60);
+		if (diffMinutes < 60) return `+${diffMinutes}m ${remainingSeconds}s`;
+
+		const diffHours = Math.floor(diffMinutes / 60);
+		const remainingMinutes = diffMinutes % 60;
+		return `+${diffHours}h ${remainingMinutes}m`;
+	}
+
+	function preview(title: string) {
+		return title.replace(/\s+/g, ' ').trim();
+	}
+
+	function hasMetadata(event: LogEntry) {
+		return event.metadata !== undefined;
+	}
+
+	function tone(type: string) {
+		if (type.includes('error')) return 'text-destructive';
+		if (type.includes('success')) return 'text-emerald-600 dark:text-emerald-400';
+		return 'text-muted-foreground';
+	}
+
+	const rowClass =
+		'grid w-full grid-cols-[7rem_1rem_12rem_minmax(0,1fr)] items-center px-4 py-2 text-left transition';
 </script>
+
+{#snippet logLine(event: LogEntry, index: number, expandable = false)}
+	<span class="shrink-0 text-muted-foreground">
+		{index === 0
+			? formatTimestamp(event.timestamp)
+			: formatRelativeTimestamp(event.timestamp, sessionEvents[index - 1].timestamp)}
+	</span>
+	<span class="shrink-0 text-muted-foreground">{expandable ? '>' : ''}</span>
+	<span class="min-w-0 truncate pr-3 uppercase {tone(event.type)}">{event.type}</span>
+	<span class="min-w-0 text-foreground">{preview(event.title)}</span>
+{/snippet}
 
 <Card>
 	<CardHeader>
 		<CardTitle>Session Log</CardTitle>
-		<CardDescription>Incoming prompts, outgoing payloads, and socket state.</CardDescription>
 	</CardHeader>
 	<CardContent>
-		<div class="space-y-3">
+		<div class="overflow-hidden rounded-xl border bg-muted/10 font-mono text-xs">
 			{#if sessionEvents.length === 0}
-				<p class="text-sm text-muted-foreground">No events yet.</p>
+				<p class="p-4 text-sm text-muted-foreground">No events yet.</p>
 			{:else}
-				{#each sessionEvents as event (event.id)}
-					{#if event.kind === 'incoming' && event.fragments}
-						<Collapsible.Root class="rounded-xl border bg-muted/20 p-4">
-							<div class="flex items-start justify-between gap-3">
-								<div>
-									<div class="flex items-center gap-3">
-										<p class="text-sm font-medium">{event.label}</p>
-										<Badge variant="outline">{event.kind}</Badge>
-									</div>
-									<p class="mt-2 text-sm leading-6 whitespace-pre-wrap text-muted-foreground">
-										{event.detail}
-									</p>
-								</div>
-								<Collapsible.Trigger
-									class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition hover:bg-muted hover:text-foreground"
-								>
-									<ChevronDownIcon
-										class="size-4 transition-transform data-[state=open]:rotate-180"
-									/>
-									<span class="sr-only">Toggle raw fragments</span>
-								</Collapsible.Trigger>
-							</div>
+				{#each sessionEvents as event, index (event.id)}
+					{#if hasMetadata(event)}
+						<Collapsible.Root class="border-t first:border-t-0">
+							<Collapsible.Trigger class={`${rowClass} items-start hover:bg-muted/40`}>
+								{@render logLine(event, index, true)}
+							</Collapsible.Trigger>
 							<Collapsible.Content
-								hiddenUntilFound
-								class="mt-3 overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+								class="overflow-hidden border-t bg-background/70 px-4 py-3 data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
 							>
-								<div class="space-y-2 border-t pt-3">
-									<p class="text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">
-										Raw fragments
-									</p>
-									<div class="flex flex-wrap gap-2 text-xs">
-										{#each [...event.fragments].sort((a, b) => a.timestamp - b.timestamp) as fragment}
-											<Badge variant="secondary">{fragment.timestamp}: {fragment.word}</Badge>
-										{/each}
-									</div>
+								<div class="pl-[20rem]">
+									<pre
+										class="mt-2 overflow-x-auto break-words whitespace-pre-wrap text-foreground">{JSON.stringify(
+											event.metadata,
+											null,
+											2
+										)}</pre>
 								</div>
 							</Collapsible.Content>
 						</Collapsible.Root>
 					{:else}
-						<div class="rounded-xl border bg-muted/20 p-4">
-							<div class="flex items-center justify-between gap-3">
-								<p class="text-sm font-medium">{event.label}</p>
-								<Badge variant="outline">{event.kind}</Badge>
-							</div>
-							<p class="mt-2 text-sm leading-6 whitespace-pre-wrap text-muted-foreground">
-								{event.detail}
-							</p>
+						<div class={`${rowClass} border-t first:border-t-0`}>
+							{@render logLine(event, index)}
 						</div>
 					{/if}
 				{/each}

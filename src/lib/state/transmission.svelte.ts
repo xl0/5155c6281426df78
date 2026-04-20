@@ -1,12 +1,10 @@
-import type { Fragment, SessionEvent, SpokenMemory } from '$lib/types';
+import { loggerState } from '$lib/state/logger.svelte';
+import type { OutgoingPayload, ReceivedMessage } from '$lib/types';
 
 class TransmissionState {
-	currentPrompt = $state('');
-	currentFragments = $state<Fragment[]>([]);
-	sessionEvents = $state<SessionEvent[]>([]);
-	spokenMemory = $state<SpokenMemory[]>([]);
 	connectionState = $state<'disconnected' | 'connecting' | 'connected'>('disconnected');
 	private websocket: WebSocket | null = null;
+	private incomingHandler: ((message: ReceivedMessage) => Promise<void> | void) | null = null;
 
 	get socket() {
 		return this.websocket;
@@ -26,9 +24,6 @@ class TransmissionState {
 
 	resetForConnection() {
 		this.connectionState = 'connecting';
-		this.currentPrompt = '';
-		this.currentFragments = [];
-		this.spokenMemory = [];
 	}
 
 	setConnected() {
@@ -39,20 +34,45 @@ class TransmissionState {
 		this.connectionState = 'disconnected';
 	}
 
-	setChallenge(prompt: string, fragments: Fragment[]) {
-		this.currentPrompt = prompt;
-		this.currentFragments = fragments;
+	setIncomingHandler(handler: ((message: ReceivedMessage) => Promise<void> | void) | null) {
+		this.incomingHandler = handler;
 	}
 
-	rememberSpokenTransmission(text: string) {
-		this.spokenMemory = [...this.spokenMemory, { prompt: this.currentPrompt, text }].slice(-12);
+	async handleIncomingMessage(text: string, fragments: ReceivedMessage['fragments']) {
+		const message = { id: Date.now() + Math.random(), text, fragments };
+		loggerState.log('transmission:in', text, { fragments });
+
+		if (!this.incomingHandler) {
+			loggerState.log('transmission:unhandled', 'No incoming handler registered.', {
+				message
+			});
+			return;
+		}
+
+		await this.incomingHandler(message);
 	}
 
-	logEvent(kind: SessionEvent['kind'], label: string, detail: string, fragments?: Fragment[]) {
-		this.sessionEvents = [
-			{ id: Date.now() + Math.random(), kind, label, detail, fragments },
-			...this.sessionEvents
-		].slice(0, 40);
+	send(payload: OutgoingPayload) {
+		if (!this.websocket || this.connectionState !== 'connected') {
+			throw new Error('Cannot transmit without an active websocket connection.');
+		}
+
+		this.websocket.send(JSON.stringify(payload));
+		loggerState.log(
+			'transmission:out',
+			payload.type === 'enter_digits'
+				? `Sent digits: ${payload.digits}`
+				: `Sent text: ${payload.text}`,
+			payload
+		);
+	}
+
+	sendDigits(digits: string) {
+		this.send({ type: 'enter_digits', digits });
+	}
+
+	sendText(text: string) {
+		this.send({ type: 'speak_text', text });
 	}
 }
 

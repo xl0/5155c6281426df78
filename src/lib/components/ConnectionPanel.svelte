@@ -22,13 +22,13 @@
 </script>
 
 <Card>
-	<Tabs bind:value={settingsTab} class="gap-4">
+	<Tabs bind:value={settingsTab} class="gap-2">
 		<CardHeader>
-			<div class="flex flex-wrap items-start justify-between gap-4">
+			<div class="flex flex-wrap items-start justify-between gap-2">
 				<div>
 					<p class="text-sm tracking-widest text-muted-foreground uppercase">NEON Console</p>
 				</div>
-				<div class="flex flex-wrap items-center justify-end gap-3">
+				<div class="flex flex-wrap items-center justify-end gap-4">
 					<TabsList class="grid grid-cols-2">
 						<TabsTrigger value="connection">Connection</TabsTrigger>
 						<TabsTrigger value="agent">Agent Settings</TabsTrigger>
@@ -89,7 +89,7 @@
 					<Select.Root type="single" bind:value={settingsState.provider}>
 						<Select.Trigger class="w-full">{selectedProviderLabel}</Select.Trigger>
 						<Select.Content>
-							{#each PROVIDERS as option}
+							{#each PROVIDERS as option (option.id)}
 								<Select.Item value={option.id} label={option.label}>{option.label}</Select.Item>
 							{/each}
 						</Select.Content>
@@ -109,7 +109,7 @@
 					<Select.Root type="single" bind:value={settingsState.model}>
 						<Select.Trigger class="w-full">{selectedModelLabel}</Select.Trigger>
 						<Select.Content>
-							{#each settingsState.models as option}
+							{#each settingsState.models as option (option)}
 								<Select.Item value={option} label={option}>{option}</Select.Item>
 							{/each}
 						</Select.Content>

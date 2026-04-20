@@ -15,15 +15,24 @@ export type SpeakTextPayload = {
 
 export type OutgoingPayload = EnterDigitsPayload | SpeakTextPayload;
 
-export type SessionEvent = {
+export type JsonValue =
+	| string
+	| number
+	| boolean
+	| null
+	| JsonValue[]
+	| { [key: string]: JsonValue };
+
+export type LogEntry = {
 	id: number;
-	kind: 'status' | 'incoming' | 'outgoing' | 'error' | 'success';
-	label: string;
-	detail: string;
-	fragments?: Fragment[];
+	timestamp: string;
+	type: string;
+	title: string;
+	metadata?: JsonValue;
 };
 
-export type SpokenMemory = {
-	prompt: string;
+export type ReceivedMessage = {
+	id: number;
 	text: string;
+	fragments: Fragment[];
 };

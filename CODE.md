@@ -47,7 +47,7 @@ It includes:
 The app state is split into four instantiated singletons:
 
 - `settings`
-  - persisted browser state for `socketUrl`, `neonCode`, `resumeText`, `provider`, `apiKey`, and `model`
+  - persisted browser state for `socketUrl`, `neonCode`, `resumeText`, `provider`, per-provider `apiKey`, and per-provider `model`
   - provider-aware derived values such as the current provider config and available models
 - `ui`
   - volatile UI state for the reference docs dialog: `docsOpen` and `docsTab`

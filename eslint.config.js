@@ -9,15 +9,35 @@ import ts from 'typescript-eslint';
 import svelteConfig from './svelte.config.js';
 
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
+const srcFiles = [
+	'src/**/*.js',
+	'src/**/*.cjs',
+	'src/**/*.mjs',
+	'src/**/*.ts',
+	'src/**/*.cts',
+	'src/**/*.mts',
+	'src/**/*.svelte',
+	'src/**/*.svelte.ts',
+	'src/**/*.svelte.js'
+];
+
+const onlySrc = (config) => ({
+	...config,
+	files: config.files ? config.files.map((pattern) => `src/${pattern}`) : srcFiles
+});
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
-	js.configs.recommended,
-	...ts.configs.recommended,
-	...svelte.configs.recommended,
-	prettier,
-	...svelte.configs.prettier,
 	{
+		ignores: ['src/lib/components/ui/**']
+	},
+	onlySrc(js.configs.recommended),
+	...ts.configs.recommended.map(onlySrc),
+	...svelte.configs.recommended.map(onlySrc),
+	onlySrc(prettier),
+	...svelte.configs.prettier.map(onlySrc),
+	{
+		files: srcFiles,
 		languageOptions: { globals: { ...globals.browser, ...globals.node } },
 
 		rules: {
@@ -27,7 +47,7 @@ export default defineConfig(
 		}
 	},
 	{
-		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
+		files: ['src/**/*.svelte', 'src/**/*.svelte.ts', 'src/**/*.svelte.js'],
 
 		languageOptions: {
 			parserOptions: {
