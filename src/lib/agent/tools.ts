@@ -54,16 +54,17 @@ function evaluateExpression(expression: string) {
 }
 
 function normalizeTransmissionText(text: string, minCharacters?: number, maxCharacters?: number) {
-	if (minCharacters !== undefined && maxCharacters !== undefined && minCharacters > maxCharacters) {
-		throw new Error('minCharacters cannot be greater than maxCharacters.');
-	}
+	const effectiveMinCharacters = Math.min(minCharacters ?? Infinity, maxCharacters ?? Infinity);
 
 	let normalizedText = text;
 	if (maxCharacters !== undefined && normalizedText.length > maxCharacters) {
 		normalizedText = normalizedText.slice(0, maxCharacters);
 	}
-	if (minCharacters !== undefined && normalizedText.length < minCharacters) {
-		normalizedText = normalizedText.padEnd(minCharacters, ' ');
+	if (effectiveMinCharacters !== Infinity && normalizedText.length < effectiveMinCharacters) {
+		while (normalizedText.length < effectiveMinCharacters) {
+			normalizedText += ' tadada';
+		}
+		normalizedText = normalizedText.slice(0, effectiveMinCharacters);
 	}
 
 	return normalizedText;

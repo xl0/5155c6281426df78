@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Collapsible } from 'bits-ui';
+	import { ChevronRight } from '@lucide/svelte';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card/index.js';
 	import type { LogEntry } from '$lib/types';
 
 	let { sessionEvents }: { sessionEvents: LogEntry[] } = $props();
+	let expandedEntries = $state<Record<string, boolean>>({});
 
 	function formatTimestamp(timestamp: string) {
 		return new Date(timestamp).toLocaleTimeString([], {
@@ -35,65 +36,107 @@
 		return title.replace(/\s+/g, ' ').trim();
 	}
 
-	const rowClass =
-		'grid w-full grid-cols-[7rem_1rem_auto_minmax(0,1fr)] items-center px-4 py-2 text-left transition';
-</script>
+	function hasSelection() {
+		const selection = window.getSelection();
 
-{#snippet logLine(event: LogEntry, index: number, expandable = false)}
-	<span class="shrink-0 text-muted-foreground">
-		{index === 0
-			? formatTimestamp(event.timestamp)
-			: formatRelativeTimestamp(event.timestamp, sessionEvents[index - 1].timestamp)}
-	</span>
-	<span class="shrink-0 text-muted-foreground">{expandable ? '>' : ''}</span>
-	<span
-		class={`min-w-0 truncate pr-3 uppercase ${
-			event.level === 'error'
-				? 'text-fail'
-				: event.level === 'success'
-					? 'text-ok'
-					: event.level === 'warning'
-						? 'text-warn'
-						: 'text-muted-foreground'
-		}`}>{event.type}</span
-	>
-	<span class="min-w-0 text-foreground">{preview(event.title)}</span>
-{/snippet}
+		return selection !== null && !selection.isCollapsed;
+	}
+
+	function toggleEntry(eventId: string) {
+		expandedEntries = { ...expandedEntries, [eventId]: !expandedEntries[eventId] };
+	}
+
+	function handleGridClick(event: MouseEvent) {
+		if (hasSelection()) return;
+
+		const cell = (event.target as HTMLElement).closest<HTMLElement>('[data-log-entry-id]');
+
+		if (!cell || cell.dataset.expandable !== 'true') return;
+
+		toggleEntry(cell.dataset.logEntryId!);
+	}
+
+	function clickableLogGrid(node: HTMLElement) {
+		node.addEventListener('click', handleGridClick);
+
+		return {
+			destroy() {
+				node.removeEventListener('click', handleGridClick);
+			}
+		};
+	}
+</script>
 
 <Card>
 	<CardHeader>
 		<CardTitle>Session Log</CardTitle>
 	</CardHeader>
 	<CardContent>
-		<div class="overflow-hidden rounded-xl border bg-muted/10 font-mono text-xs">
+		<div class="overflow-hidden rounded-xl  -border-t bg-muted/10">
 			{#if sessionEvents.length === 0}
 				<p class="p-4 text-sm text-muted-foreground">No events yet.</p>
 			{:else}
-				{#each sessionEvents as event, index (event.id)}
-					{#if event.metadata !== undefined}
-						<Collapsible.Root class="border-t first:border-t-0">
-							<Collapsible.Trigger class={`${rowClass} items-start hover:bg-muted/40`}>
-								{@render logLine(event, index, true)}
-							</Collapsible.Trigger>
-							<Collapsible.Content
-								class="overflow-hidden border-t bg-background/70 px-4 py-3 data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+				<div
+					class="grid grid-cols-[auto_auto_auto_minmax(0,1fr)] items-start font-mono text-xs"
+					use:clickableLogGrid
+				>
+					{#each sessionEvents as event, index (event.id)}
+						<div class="group contents border border-t">
+							<span
+								class={`h-full min-w-0 shrink-0 self-start border-t px-4 py-2 text-left text-muted-foreground transition select-text group-hover:bg-muted/40`}
+								data-log-entry-id={event.id}
+								data-expandable={event.metadata !== undefined}
 							>
-								<div class="pl-[20rem]">
+								{index === 0
+									? formatTimestamp(event.timestamp)
+									: formatRelativeTimestamp(event.timestamp, sessionEvents[index - 1].timestamp)}
+							</span>
+							<span
+								class={`h-full min-w-0 shrink-0 self-start border-t px-4 py-2 text-left text-muted-foreground transition select-text group-hover:bg-muted/40`}
+								data-log-entry-id={event.id}
+								data-expandable={event.metadata !== undefined}
+							>
+								{#if event.metadata !== undefined}
+									<ChevronRight
+										class={`size-3 transition-transform ${(expandedEntries[event.id] ?? false) ? 'rotate-90' : ''}`}
+									/>
+								{/if}
+							</span>
+							<span
+								class={`h-full min-w-0 self-start truncate border-t px-4 py-2 text-left uppercase transition select-text group-hover:bg-muted/40 ${
+									event.level === 'error'
+										? 'text-fail'
+										: event.level === 'success'
+											? 'text-ok'
+											: event.level === 'warning'
+												? 'text-warn'
+												: 'text-muted-foreground'
+								}`}
+								data-log-entry-id={event.id}
+								data-expandable={event.metadata !== undefined}>{event.type}</span
+							>
+							<span
+								class={`h-full min-w-0 shrink-0 self-start border-t px-4 py-2 text-left text-muted-foreground transition select-text group-hover:bg-muted/40`}
+								data-log-entry-id={event.id}
+								data-expandable={event.metadata !== undefined}
+							>
+								{preview(event.title)}
+							</span>
+							{#if event.metadata !== undefined && expandedEntries[event.id]}
+								<div
+									class="col-span-4 overflow-hidden border-t bg-background/70 data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+								>
 									<pre
-										class="mt-2 overflow-x-auto break-words whitespace-pre-wrap text-foreground">{JSON.stringify(
+										class="overflow-x-auto px-4 py-3 break-words whitespace-pre-wrap text-foreground">{JSON.stringify(
 											event.metadata,
 											null,
 											2
 										)}</pre>
 								</div>
-							</Collapsible.Content>
-						</Collapsible.Root>
-					{:else}
-						<div class={`${rowClass} border-t first:border-t-0`}>
-							{@render logLine(event, index)}
+							{/if}
 						</div>
-					{/if}
-				{/each}
+					{/each}
+				</div>
 			{/if}
 		</div>
 	</CardContent>
