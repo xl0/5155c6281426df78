@@ -1,5 +1,5 @@
 import { loggerState } from '$lib/state/logger.svelte';
-import type { OutgoingPayload, ReceivedMessage } from '$lib/types';
+import type { ReceivedMessage } from '$lib/types';
 
 class TransmissionState {
 	connectionState = $state<'disconnected' | 'connecting' | 'connected'>('disconnected');
@@ -43,36 +43,38 @@ class TransmissionState {
 		loggerState.log('transmission:in', text, { fragments });
 
 		if (!this.incomingHandler) {
-			loggerState.log('transmission:unhandled', 'No incoming handler registered.', {
-				message
-			});
+			loggerState.log(
+				'transmission:unhandled',
+				'No incoming handler registered.',
+				{
+					message
+				},
+				'warning'
+			);
 			return;
 		}
 
 		await this.incomingHandler(message);
 	}
 
-	send(payload: OutgoingPayload) {
+	sendDigits(digits: string) {
 		if (!this.websocket || this.connectionState !== 'connected') {
 			throw new Error('Cannot transmit without an active websocket connection.');
 		}
 
+		const payload = { type: 'enter_digits', digits } as const;
 		this.websocket.send(JSON.stringify(payload));
-		loggerState.log(
-			'transmission:out',
-			payload.type === 'enter_digits'
-				? `Sent digits: ${payload.digits}`
-				: `Sent text: ${payload.text}`,
-			payload
-		);
-	}
-
-	sendDigits(digits: string) {
-		this.send({ type: 'enter_digits', digits });
+		loggerState.log('transmission:out:digits', `Sent digits: ${digits}`, payload);
 	}
 
 	sendText(text: string) {
-		this.send({ type: 'speak_text', text });
+		if (!this.websocket || this.connectionState !== 'connected') {
+			throw new Error('Cannot transmit without an active websocket connection.');
+		}
+
+		const payload = { type: 'speak_text', text } as const;
+		this.websocket.send(JSON.stringify(payload));
+		loggerState.log('transmission:out:text', `Sent text: ${text}`, payload);
 	}
 }
 

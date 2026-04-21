@@ -12,12 +12,12 @@ async function handleSocketMessage(event: MessageEvent) {
 		const payload = JSON.parse(String(event.data)) as IncomingPayload;
 
 		if (payload.type === 'success') {
-			loggerState.log('transmission:success', 'Authentication complete.');
+			loggerState.log('transmission:success', 'Authentication complete.', undefined, 'success');
 			return;
 		}
 
 		if (payload.type === 'error') {
-			loggerState.log('transmission:error', payload.message);
+			loggerState.log('transmission:error', payload.message, undefined, 'error');
 			return;
 		}
 
@@ -27,7 +27,8 @@ async function handleSocketMessage(event: MessageEvent) {
 		loggerState.log(
 			'transmission:error',
 			error instanceof Error ? error.message : 'Unknown message error',
-			{ rawData: String(event.data) }
+			{ rawData: String(event.data) },
+			'error'
 		);
 	}
 }
@@ -57,7 +58,7 @@ function connect() {
 	};
 
 	websocket.onerror = () => {
-		loggerState.log('transmission:error', 'The websocket reported an error.');
+		loggerState.log('transmission:error', 'The websocket reported an error.', undefined, 'error');
 	};
 
 	websocket.onmessage = async (event) => {

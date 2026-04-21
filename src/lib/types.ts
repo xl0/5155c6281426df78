@@ -13,8 +13,6 @@ export type SpeakTextPayload = {
 	text: string;
 };
 
-export type OutgoingPayload = EnterDigitsPayload | SpeakTextPayload;
-
 export type JsonValue =
 	| string
 	| number
@@ -23,10 +21,13 @@ export type JsonValue =
 	| JsonValue[]
 	| { [key: string]: JsonValue };
 
+export type LogLevel = 'error' | 'warning' | 'normal' | 'success';
+
 export type LogEntry = {
 	id: number;
 	timestamp: string;
 	type: string;
+	level: LogLevel;
 	title: string;
 	metadata?: JsonValue;
 };

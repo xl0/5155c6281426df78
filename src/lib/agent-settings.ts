@@ -2,7 +2,6 @@ export type Provider = 'openrouter' | 'anthropic' | 'openai' | 'google';
 
 export type ModelOption = {
 	id: string;
-	cheap?: boolean;
 };
 
 export const PROVIDERS: { id: Provider; label: string; placeholder: string }[] = [
@@ -17,17 +16,14 @@ export const MODELS: Record<Provider, ModelOption[]> = {
 		{ id: 'anthropic/claude-sonnet-4.6' },
 		{ id: 'anthropic/claude-opus-4.6' },
 		{ id: 'openai/gpt-5.4' },
-		{ id: 'openai/gpt-5.4-mini', cheap: true },
+		{ id: 'openai/gpt-5.4-mini' },
+		{ id: 'openai/gpt-5.4-nano' },
 		{ id: 'google/gemini-3.1-pro-preview' },
 		{ id: 'google/gemini-3-flash-preview' }
 	],
-	anthropic: [
-		{ id: 'claude-haiku-4-5', cheap: true },
-		{ id: 'claude-sonnet-4-6' },
-		{ id: 'claude-opus-4-6' }
-	],
-	openai: [{ id: 'gpt-5.4' }, { id: 'gpt-5.4-mini', cheap: true }],
-	google: [{ id: 'gemini-2.5-pro' }, { id: 'gemini-2.5-flash', cheap: true }]
+	anthropic: [{ id: 'claude-haiku-4-5' }, { id: 'claude-sonnet-4-6' }, { id: 'claude-opus-4-6' }],
+	openai: [{ id: 'gpt-5.4' }, { id: 'gpt-5.4-mini' }, { id: 'gpt-5.4-nano' }],
+	google: [{ id: 'gemini-2.5-pro' }, { id: 'gemini-2.5-flash' }]
 };
 
 export function modelIds(provider: Provider): string[] {

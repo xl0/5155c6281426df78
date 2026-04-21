@@ -30,22 +30,13 @@
 		return `+${diffHours}h ${remainingMinutes}m`;
 	}
 
+	// Collapse multiline or irregular whitespace into a compact one-line preview.
 	function preview(title: string) {
 		return title.replace(/\s+/g, ' ').trim();
 	}
 
-	function hasMetadata(event: LogEntry) {
-		return event.metadata !== undefined;
-	}
-
-	function tone(type: string) {
-		if (type.includes('error')) return 'text-destructive';
-		if (type.includes('success')) return 'text-emerald-600 dark:text-emerald-400';
-		return 'text-muted-foreground';
-	}
-
 	const rowClass =
-		'grid w-full grid-cols-[7rem_1rem_12rem_minmax(0,1fr)] items-center px-4 py-2 text-left transition';
+		'grid w-full grid-cols-[7rem_1rem_auto_minmax(0,1fr)] items-center px-4 py-2 text-left transition';
 </script>
 
 {#snippet logLine(event: LogEntry, index: number, expandable = false)}
@@ -55,7 +46,17 @@
 			: formatRelativeTimestamp(event.timestamp, sessionEvents[index - 1].timestamp)}
 	</span>
 	<span class="shrink-0 text-muted-foreground">{expandable ? '>' : ''}</span>
-	<span class="min-w-0 truncate pr-3 uppercase {tone(event.type)}">{event.type}</span>
+	<span
+		class={`min-w-0 truncate pr-3 uppercase ${
+			event.level === 'error'
+				? 'text-fail'
+				: event.level === 'success'
+					? 'text-ok'
+					: event.level === 'warning'
+						? 'text-warn'
+						: 'text-muted-foreground'
+		}`}>{event.type}</span
+	>
 	<span class="min-w-0 text-foreground">{preview(event.title)}</span>
 {/snippet}
 
@@ -69,7 +70,7 @@
 				<p class="p-4 text-sm text-muted-foreground">No events yet.</p>
 			{:else}
 				{#each sessionEvents as event, index (event.id)}
-					{#if hasMetadata(event)}
+					{#if event.metadata !== undefined}
 						<Collapsible.Root class="border-t first:border-t-0">
 							<Collapsible.Trigger class={`${rowClass} items-start hover:bg-muted/40`}>
 								{@render logLine(event, index, true)}

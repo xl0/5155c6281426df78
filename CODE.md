@@ -2,76 +2,131 @@
 
 ## Overview
 
-This repository is a SvelteKit app for the NEON authentication puzzle. The main UI is the root `/` page, which functions as a websocket console for connecting to NEON, receiving fragmented challenges, storing operator-provided reference data, configuring client-side agent settings, and showing session activity.
+This repository is a SvelteKit app for the NEON authentication puzzle. The app acts as a websocket console that:
+
+- connects to a NEON websocket endpoint
+- reconstructs fragmented incoming challenges
+- runs a client-side agent against those challenges
+- transmits responses back to NEON
+- records a structured shared log for transmission and agent activity
+
+The main UI lives on the root `/` page.
 
 ## Route
 
 ### `src/routes/+page.svelte`
 
-The root page composes the console UI by rendering the top connection/settings card, session log, spoken memory panel, and reference docs dialog.
+The root page currently renders:
 
-It includes:
+- `ConnectionPanel.svelte` for connection and agent settings
+- `SessionLog.svelte` for the shared structured log stream
+- `ReferenceDocsDialog.svelte` for the mission/protocol reference docs
 
-- A top connection/settings card rendered by `ConnectionPanel.svelte`, with:
-  - app title
-  - dark-mode toggle
-  - reference docs button
-  - a Connection tab for websocket URL, Neon Code, crew manifest / resume, and connect controls
-  - an Agent Settings tab for provider, per-provider API key, and model selection
-  - connection status badge
-- A main column with the session log
-- A sidebar with the spoken-memory panel
-- A modal dialog with the mission and protocol docs
+The old sidebar memory panel is not currently rendered.
 
 ## Architecture
 
-- `src/routes/+page.svelte` wires together the console components.
+- `src/routes/+page.svelte` wires together the main console UI.
 - `src/lib/state/settings.svelte.ts` defines persisted app and agent configuration and exports `settingsState`.
 - `src/lib/state/ui.svelte.ts` defines volatile UI state and exports `uiState`.
-- `src/lib/state/transmission.svelte.ts` defines volatile websocket/session state and exports `transmissionState`.
-- `src/lib/state/agent.svelte.ts` defines volatile agent-facing state and exports `agentState`.
+- `src/lib/state/logger.svelte.ts` defines the shared structured log state and exports `loggerState`.
+- `src/lib/state/transmission.svelte.ts` defines websocket/transport state and exports `transmissionState`.
+- `src/lib/state/agent.svelte.ts` defines the client-side agent session state and exports `agentState`.
 - `src/lib/state/index.ts` re-exports the instantiated states.
-- `src/lib/console-actions.ts` contains the cross-state websocket lifecycle actions.
-- `src/lib/agent-settings.ts` defines supported AI providers, API-key placeholders, and model lists for the client-side agent settings UI.
-- `src/lib/protocol.ts` provides prompt reconstruction for fragmented inbound messages.
-- `src/lib/types.ts` defines shared data shapes for websocket payloads, session events, and spoken memory.
-- `src/lib/components/*.svelte` contains the UI pieces used by the root page.
-- `src/lib/components/ui/select/` contains the generated shadcn select primitive used by agent settings.
-- `docs/resume.md` provides the default crew-manifest text loaded into persisted state on first use.
-- `docs/misson.md` and `docs/protocol.txt` provide the reference material shown in the modal dialog.
+- `src/lib/console-actions.ts` owns websocket lifecycle setup and dispatches inbound messages into transmission and agent state.
+- `src/lib/agent/tools.ts` exports the tool dictionary available to the agent.
+- `src/lib/ai/model-factory.ts` creates provider-specific AI SDK model instances.
+- `src/lib/agent-settings.ts` defines supported AI providers, model lists, and UI labels/placeholders.
+- `src/lib/protocol.ts` reconstructs inbound fragmented messages.
+- `src/lib/types.ts` defines shared fragment, payload, log, and received-message types.
+- `src/lib/components/*.svelte` contains the root-page UI pieces.
+- `src/lib/components/ui/` contains generated shadcn-svelte primitives. This subtree is excluded from lint and format enforcement.
+- `docs/resume.md` provides the default resume text loaded into persisted settings on first use.
+- `docs/misson.md` and `docs/protocol.txt` provide the reference material shown in the docs dialog.
 
 ## State Model
 
 ### `src/lib/state/*`
 
-The app state is split into four instantiated singletons:
+The app state is split into five instantiated singletons:
 
 - `settings`
-  - persisted browser state for `socketUrl`, `neonCode`, `resumeText`, `provider`, per-provider `apiKey`, and per-provider `model`
-  - provider-aware derived values such as the current provider config and available models
+  - persisted browser state for `socketUrl`, `neonCode`, `resumeText`, `provider`, `apiKey`, and `model`
+  - provider-aware derived values such as `currentProviderConfig` and available `models`
 - `ui`
   - volatile UI state for the reference docs dialog: `docsOpen` and `docsTab`
+- `logger`
+  - append-only in-memory structured log entries in `entries`
+  - `log(type, title, metadata?)` appends timestamped log rows
+  - used by both transmission and agent code
 - `transmission`
-  - volatile websocket and NEON session state: `connectionState`, `currentPrompt`, `currentFragments`, `sessionEvents`, and `spokenMemory`
-  - state-local methods for session resets, socket bookkeeping, event logging, and transmission memory
+  - volatile transport state only: `connectionState`, current websocket reference, and a registered incoming handler
+  - no longer stores received/sent message arrays or event history
+  - receives reconstructed inbound messages, logs them through `loggerState`, and forwards them to the registered async handler
+  - sends outbound `enter_digits` / `speak_text` payloads and logs them through `loggerState`
 - `agent`
-  - volatile model-facing state: `messages` and `toolCalls`
+  - volatile agent session state: `pendingChallenges`, `isRunning`, `lastError`, and persistent `conversationHistory`
+  - owns one `ToolLoopAgent` instance per websocket session
+  - keeps explicit `ModelMessage[]` history across incoming NEON messages so each new challenge continues the same conversation
 
 Behavior:
 
-- Opens and closes the websocket connection through `consoleActions`
-- Reconstructs incoming prompts from timestamped fragments
-- Stores session events and spoken memory inside `transmission`
-- Reserves `agent` for future model messages and tool execution state
-- Resets volatile agent and transmission session state when a new connection is opened
+- `consoleActions.connect()` resets logger, transmission, and agent state before opening a new websocket session.
+- Incoming websocket `challenge` payloads are reconstructed via `reconstructMessage(...)` and passed into `transmissionState.handleIncomingMessage(...)`.
+- `transmissionState` logs inbound messages and forwards them to the registered handler.
+- `agentState` enqueues incoming challenges and processes them sequentially.
+- The agent uses a persistent `ToolLoopAgent` plus accumulated `conversationHistory` to continue the same conversation across multiple NEON prompts.
 
-## Protocol Helper
+## Agent
+
+### `src/lib/state/agent.svelte.ts`
+
+The agent layer uses the AI SDK `ToolLoopAgent`.
+
+Key behavior:
+
+- validates that an API key is present before running
+- lazily creates the `ToolLoopAgent` on the first challenge of a session
+- seeds the conversation history once with:
+  - `Neon Code`
+  - `Crew Manifest / Resume`
+- appends each reconstructed NEON challenge as a new user message in the same session
+- logs agent steps, tool results, plain text output, and errors through `loggerState`
+- serializes challenge processing with a simple FIFO queue
+
+### `src/lib/agent/tools.ts`
+
+The exported `neonTools` dictionary contains:
+
+- `send_digits`
+  - sends an `enter_digits` payload through `transmissionState`
+- `send_text`
+  - sends a `speak_text` payload through `transmissionState`
+- `string_length`
+  - returns character length for strict-length prompt handling
+- `eval_js`
+  - evaluates simple arithmetic expressions using `expr-eval`
+  - normalizes `Math.floor(...)` to `floor(...)` before parsing
+
+The tools themselves are intentionally thin; agent-level logging happens in `agentState`, not in the tool implementations.
+
+## Transport
+
+### `src/lib/console-actions.ts`
+
+This file owns websocket connection lifecycle:
+
+- opens the websocket with the configured `socketUrl`
+- resets session-local state before reconnecting
+- installs socket handlers for `open`, `close`, `error`, and `message`
+- routes inbound `challenge` payloads through prompt reconstruction and transmission handling
+- logs `success` and `error` payloads through `loggerState`
 
 ### `src/lib/protocol.ts`
 
 This file contains:
 
-- `reconstructMessage(fragments)` to sort fragments by timestamp and join them into a prompt string
+- `reconstructMessage(fragments)` to sort fragments by ascending timestamp and join them into a prompt string
 
 ## Shared Types
 
@@ -83,18 +138,28 @@ Key types:
 - `EnterDigitsPayload`: outbound keypad payload
 - `SpeakTextPayload`: outbound spoken-text payload
 - `OutgoingPayload`: union of the two outbound payload shapes
-- `SessionEvent`: one session log entry, optionally with original fragments
-- `SpokenMemory`: saved pair of `{ prompt, text }` for prior spoken transmissions
+- `JsonValue`: JSON-serializable metadata value
+- `LogEntry`: one shared structured log entry with `type`, `timestamp`, `title`, and optional `metadata`
+- `ReceivedMessage`: reconstructed inbound NEON message with original fragments attached
 
 ## UI Components
 
-- `ConnectionPanel.svelte` renders the top card and tabbed settings UI for connection fields and agent provider/API key/model selection.
-  It also renders the top-card title row, theme toggle, and docs trigger.
-- `SessionLog.svelte` renders the event timeline and shows raw incoming fragments in collapsible entries.
-- `MemoryPanel.svelte` renders saved spoken transmissions used for later verification.
-- `ReferenceDocsDialog.svelte` renders the mission and protocol docs in a wide modal with tabs.
+- `ConnectionPanel.svelte`
+  - renders the top card with tabs for connection settings and agent settings
+  - includes websocket URL, Neon Code, resume text, connect/disconnect controls, provider selection, API key, and model selection
+  - also renders theme toggle and reference-docs button
+- `SessionLog.svelte`
+  - renders `loggerState.entries` as a dense text-style log
+  - uses a grid layout for timestamp / expand-marker / type / message alignment
+  - shows the first timestamp as absolute and subsequent timestamps relative to the previous row
+  - only rows with metadata are expandable, shown with a leading `>` marker
+- `ReferenceDocsDialog.svelte`
+  - renders the mission and protocol docs in a tabbed dialog
+- `MemoryPanel.svelte`
+  - still exists in the codebase but is not currently mounted by the root page
 
 ## Styling
 
 - Tailwind CSS v4 is configured in `src/routes/layout.css`.
 - shadcn-svelte is the component layer used throughout the UI.
+- `src/lib/components/ui/**` is excluded from linting and auto-formatting.
