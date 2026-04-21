@@ -223,10 +223,12 @@ class AgentState {
 			timestamp: Date.now()
 		} as const;
 
+		const model = getModel(settingsState.provider as KnownProvider, settingsState.model as never);
+
 		const agent = new Agent({
 			initialState: {
 				systemPrompt: SYSTEM_PROMPT,
-				model: getModel(settingsState.provider as KnownProvider, settingsState.model as never),
+				model,
 				thinkingLevel: 'off',
 				tools: [...neonTools],
 				messages: [bootstrapMessage]
@@ -236,7 +238,12 @@ class AgentState {
 			getApiKey: (provider) => (provider === settingsState.provider ? apiKey : undefined)
 		});
 
-		loggerState.log('agent:new', 'Initialized persistent agent session.', bootstrapMessage);
+		loggerState.log('agent:new', 'Initialized persistent agent session.', {
+			system: SYSTEM_PROMPT,
+			messsage: bootstrapMessage,
+			model: model.id,
+			provider: model.provider
+		});
 
 		agent.subscribe((event) => {
 			this.handleAgentEvent(event);
