@@ -21,7 +21,7 @@ export type JsonValue =
 	| JsonValue[]
 	| { [key: string]: JsonValue };
 
-export type LogLevel = 'error' | 'warning' | 'normal' | 'success';
+export type LogLevel = 'debug' | 'error' | 'warning' | 'normal' | 'success';
 
 export type LogEntry = {
 	id: number;

@@ -11,9 +11,9 @@ const sendDigitsParameters = Type.Object({
 });
 
 const sendTextParameters = Type.Object({
-	text: Type.String({ minLength: 1, maxLength: 256 }),
-	minCharacters: Type.Optional(Type.Integer({ minimum: 1, maximum: 256 })),
-	maxCharacters: Type.Optional(Type.Integer({ minimum: 1, maximum: 256 }))
+	text: Type.String(),
+	minCharacters: Type.Optional(Type.Integer({ minimum: 1, maximum: 8192 })),
+	maxCharacters: Type.Optional(Type.Integer({ minimum: 1, maximum: 8192 }))
 });
 
 const evalAndSendDigitsParameters = Type.Object({

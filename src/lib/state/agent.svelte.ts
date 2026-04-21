@@ -122,7 +122,9 @@ class AgentState {
 			case 'message_start':
 				loggerState.log(
 					`agent:${event.message.role}:message_start`,
-					`Started ${event.message.role} message`
+					`Started ${event.message.role} message`,
+					undefined,
+					event.message.role === 'assistant' ? 'normal' : 'debug'
 				);
 				return;
 			case 'message_end': {
@@ -164,7 +166,7 @@ class AgentState {
 			case 'tool_execution_end':
 				loggerState.log(
 					'agent:tool_result',
-					`${event.toolName} -> ${JSON.stringify(event.result ?? {})}`,
+					`${event.toolName} -> ${event.result.content?.[0].text}`,
 					this.toJsonValue({
 						toolCallId: event.toolCallId,
 						isError: event.isError,
@@ -199,7 +201,7 @@ class AgentState {
 				return;
 
 			case 'turn_start':
-				loggerState.log('agent:turn_start', 'Turn started');
+				loggerState.log('agent:turn_start', 'Turn started', undefined, 'debug');
 				return;
 		}
 	}
@@ -215,7 +217,7 @@ class AgentState {
 		const bootstrapMessage = {
 			role: 'user',
 			content: [
-				`Neon Code: ${settingsState.neonCode || '(not set)'}`,
+				`Vessel authorization code: ${settingsState.neonCode || '(not set)'}`,
 				'',
 				'Crew Manifest / Resume:',
 				settingsState.resumeText
@@ -264,7 +266,7 @@ class AgentState {
 			return;
 		}
 
-		loggerState.log('agent:challenge', challenge.text);
+		loggerState.log('agent:challenge', challenge.text, undefined, 'debug');
 
 		try {
 			await agent.prompt({

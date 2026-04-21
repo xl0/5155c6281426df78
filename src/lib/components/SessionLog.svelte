@@ -1,10 +1,15 @@
 <script lang="ts">
 	import { ChevronRight } from '@lucide/svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card/index.js';
 	import type { LogEntry } from '$lib/types';
 
 	let { sessionEvents }: { sessionEvents: LogEntry[] } = $props();
 	let expandedEntries = $state<Record<string, boolean>>({});
+	let showDebug = $state(false);
+	const visibleSessionEvents = $derived.by(() =>
+		showDebug ? sessionEvents : sessionEvents.filter((event) => event.level !== 'debug')
+	);
 
 	function formatTimestamp(timestamp: string) {
 		return new Date(timestamp).toLocaleTimeString([], {
@@ -69,18 +74,23 @@
 
 <Card>
 	<CardHeader>
-		<CardTitle>Session Log</CardTitle>
+		<div class="flex items-center justify-between gap-3">
+			<CardTitle>Session Log</CardTitle>
+			<Button variant="outline" size="sm" onclick={() => (showDebug = !showDebug)}>
+				{showDebug ? 'Hide Debug' : 'Show Debug'}
+			</Button>
+		</div>
 	</CardHeader>
 	<CardContent>
-		<div class="overflow-hidden rounded-xl  -border-t bg-muted/10">
-			{#if sessionEvents.length === 0}
+		<div class="-border-t overflow-hidden rounded-xl bg-muted/10">
+			{#if visibleSessionEvents.length === 0}
 				<p class="p-4 text-sm text-muted-foreground">No events yet.</p>
 			{:else}
 				<div
 					class="grid grid-cols-[auto_auto_auto_minmax(0,1fr)] items-start font-mono text-xs"
 					use:clickableLogGrid
 				>
-					{#each sessionEvents as event, index (event.id)}
+					{#each visibleSessionEvents as event, index (event.id)}
 						<div class="group contents border border-t">
 							<span
 								class={`h-full min-w-0 shrink-0 self-start border-t px-4 py-2 text-left text-muted-foreground transition select-text group-hover:bg-muted/40`}
@@ -89,7 +99,10 @@
 							>
 								{index === 0
 									? formatTimestamp(event.timestamp)
-									: formatRelativeTimestamp(event.timestamp, sessionEvents[index - 1].timestamp)}
+									: formatRelativeTimestamp(
+											event.timestamp,
+											visibleSessionEvents[index - 1].timestamp
+										)}
 							</span>
 							<span
 								class={`h-full min-w-0 shrink-0 self-start border-t px-4 py-2 text-left text-muted-foreground transition select-text group-hover:bg-muted/40`}
@@ -104,13 +117,15 @@
 							</span>
 							<span
 								class={`h-full min-w-0 self-start truncate border-t px-4 py-2 text-left uppercase transition select-text group-hover:bg-muted/40 ${
-									event.level === 'error'
-										? 'text-fail'
-										: event.level === 'success'
-											? 'text-ok'
-											: event.level === 'warning'
-												? 'text-warn'
-												: 'text-muted-foreground'
+									event.level === 'debug'
+										? 'text-muted-foreground/60'
+										: event.level === 'error'
+											? 'text-fail'
+											: event.level === 'success'
+												? 'text-ok'
+												: event.level === 'warning'
+													? 'text-warn'
+													: 'text-muted-foreground'
 								}`}
 								data-log-entry-id={event.id}
 								data-expandable={event.metadata !== undefined}>{event.type}</span
