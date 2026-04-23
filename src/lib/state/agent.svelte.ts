@@ -13,7 +13,8 @@ import type { JsonValue, ReceivedMessage } from '$lib/types';
 
 const SYSTEM_PROMPT = `You are an AI copilot, handle communications with NEON.
 
-Respond as copilot, never as human.
+When confirming comms channel, always respond as copilot, never as human.
+
 Use one tool at a time, never batch them.
 
 
@@ -38,7 +39,6 @@ class AgentState {
 	lastError = $state<string | null>(null);
 	private sessionAgent: Agent | null = null;
 	private providerSessionId = this.createProviderSessionId();
-	private abortAfterTerminalTool = false;
 
 	private createProviderSessionId() {
 		if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -54,7 +54,6 @@ class AgentState {
 		this.lastError = null;
 		this.sessionAgent = null;
 		this.providerSessionId = this.createProviderSessionId();
-		this.abortAfterTerminalTool = false;
 	}
 
 	enqueueChallenge(challenge: ReceivedMessage) {
@@ -129,13 +128,6 @@ class AgentState {
 				return;
 			case 'message_end': {
 				const reply = this.contentToText(event.message.content);
-				if (
-					this.abortAfterTerminalTool &&
-					this.isAssistantMessage(event.message) &&
-					event.message.stopReason === 'aborted'
-				) {
-					return;
-				}
 
 				if (this.isAssistantMessage(event.message) && event.message.errorMessage) {
 					loggerState.log(
@@ -173,18 +165,6 @@ class AgentState {
 						result: event.result
 					})
 				);
-
-				if (
-					!event.isError &&
-					(event.toolName === 'send_digits' ||
-						event.toolName === 'send_text' ||
-						event.toolName === 'eval_and_send_digits' ||
-						event.toolName === 'wiki_summary_send_word' ||
-						event.toolName === 'transmit_nth_word')
-				) {
-					this.abortAfterTerminalTool = true;
-					this.sessionAgent?.abort();
-				}
 
 				return;
 			case 'turn_end':
@@ -233,7 +213,8 @@ class AgentState {
 				model,
 				thinkingLevel: 'off',
 				tools: [...neonTools],
-				messages: [bootstrapMessage]
+				messages: [bootstrapMessage],
+			
 			},
 			sessionId: this.providerSessionId,
 			toolExecution: 'sequential',
@@ -256,7 +237,6 @@ class AgentState {
 
 	private async runChallenge(challenge: ReceivedMessage) {
 		this.lastError = null;
-		this.abortAfterTerminalTool = false;
 		this.sessionAgent ??= this.createSessionAgent();
 
 		const agent = this.sessionAgent;
@@ -272,20 +252,13 @@ class AgentState {
 			await agent.prompt({
 				role: 'user',
 				content: challenge.text,
-				timestamp: Date.now()
+				timestamp: Date.now(),
 			});
-			this.lastError = this.abortAfterTerminalTool ? null : (agent.state.errorMessage ?? null);
+			this.lastError = agent.state.errorMessage ?? null;
 		} catch (error) {
-			if (this.abortAfterTerminalTool) {
-				this.lastError = null;
-				return;
-			}
-
 			const message = error instanceof Error ? error.message : 'Agent request failed.';
 			this.lastError = message;
 			loggerState.log('agent:error', message, undefined, 'error');
-		} finally {
-			this.abortAfterTerminalTool = false;
 		}
 	}
 }

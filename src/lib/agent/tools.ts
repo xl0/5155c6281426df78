@@ -121,7 +121,8 @@ const sendDigitsTool: AgentTool<typeof sendDigitsParameters> = {
 			details: {
 				ok: true,
 				payload: { type: 'enter_digits', digits }
-			}
+			},
+			terminate: true
 		};
 	}
 };
@@ -143,7 +144,8 @@ const sendTextTool: AgentTool<typeof sendTextParameters> = {
 				payload: { type: 'speak_text', text: normalizedText },
 				minCharacters: minCharacters ?? null,
 				maxCharacters: maxCharacters ?? null
-			}
+			},
+			terminate: true
 		};
 	}
 };
@@ -165,7 +167,8 @@ const evalAndSendDigitsTool: AgentTool<typeof evalAndSendDigitsParameters> = {
 			details: {
 				result,
 				payload: { type: 'enter_digits', digits }
-			}
+			},
+			terminate: true
 		};
 	}
 };
@@ -195,7 +198,8 @@ const wikiSummarySendWordTool: AgentTool<typeof wikiSummarySendWordParameters> =
 				wordCount: summary.words.length,
 				payload: { type: 'speak_text', text: targetWord },
 				url: summary.url
-			}
+			},
+			terminate: true
 		};
 	}
 };
@@ -225,7 +229,8 @@ const transmitNthWordTool: AgentTool<typeof transmitNthWordParameters> = {
 				targetWord,
 				wordCount: words.length,
 				payload: { type: 'speak_text', text: targetWord }
-			}
+			},
+			terminate: true
 		};
 	}
 };
